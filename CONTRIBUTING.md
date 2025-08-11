@@ -17,8 +17,8 @@ We welcome contributions to the TIE MCP Server project! This document provides g
 
 1. **Fork and Clone the Repository**
    ```bash
-   git clone https://github.com/Nidhi2302/tie-mcp-server.git
-   cd tie-mcp-server
+   git clone https://github.com/Nidhi2302/TIE-mcp-server.git
+   cd TIE-mcp-server
    ```
 
 2. **Create a Virtual Environment**

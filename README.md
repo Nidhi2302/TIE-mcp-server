@@ -42,8 +42,8 @@ Before installation, ensure you have:
 
 ```bash
 # Clone the repository
-git clone https://github.com/Nidhi2302/tie-mcp-server.git
-cd tie-mcp-server
+git clone https://github.com/Nidhi2302/TIE-mcp-server.git
+cd TIE-mcp-server
 
 # Create and activate virtual environment
 python -m venv venv
@@ -62,8 +62,8 @@ pip install -e .
 
 ```bash
 # Clone the repository
-git clone https://github.com/Nidhi2302/tie-mcp-server.git
-cd tie-mcp-server
+git clone https://github.com/Nidhi2302/TIE-mcp-server.git
+cd TIE-mcp-server
 
 # Install Poetry if not already installed
 pip install poetry
@@ -79,8 +79,8 @@ poetry shell
 
 ```bash
 # Clone the repository
-git clone https://github.com/Nidhi2302/tie-mcp-server.git
-cd tie-mcp-server
+git clone https://github.com/Nidhi2302/TIE-mcp-server.git
+cd TIE-mcp-server
 
 # Build and run with Docker Compose
 docker-compose up -d
@@ -237,7 +237,7 @@ List all available trained models.
 ```bash
 # Clone and setup
 git clone https://github.com/your-username/tie-mcp-server.git
-cd tie-mcp-server
+cd TIE-mcp-server
 
 # Install in development mode
 pip install -e ".[dev]"
