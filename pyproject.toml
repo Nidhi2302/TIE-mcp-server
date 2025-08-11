@@ -1,0 +1,111 @@
+[tool.poetry]
+name = "tie-mcp-server"
+version = "1.0.0"
+description = "MCP Server implementation for the Technique Inference Engine (TIE) project"
+authors = ["Nidhi Trivedi <nj20383@gmail.com>"]
+homepage = "https://github.com/Nidhi2302/tie-mcp-server"
+repository = "https://github.com/Nidhi2302/tie-mcp-server"
+documentation = "https://github.com/Nidhi2302/tie-mcp-server#readme"
+packages = [{ include = "tie_mcp", from = "src" }]
+readme = "README.md"
+keywords = ["mitre", "attack", "technique", "prediction", "cybersecurity", "mcp", "model-context-protocol"]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Information Technology",
+    "Intended Audience :: Science/Research",
+    "License :: OSI Approved :: Apache Software License",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Topic :: Security",
+    "Topic :: Scientific/Engineering :: Artificial Intelligence"
+]
+
+[tool.poetry.dependencies]
+python = ">=3.10, <3.14"
+# Core MCP dependencies
+mcp = "^1.0.0"
+# Essential dependencies
+pydantic = "^2.0.0"
+pydantic-settings = "^2.0.0"
+numpy = ">=1.24.0,<3.0.0"
+pandas = "^2.0.0"
+# Machine learning
+scikit-learn = "^1.4.1"
+implicit = "^0.7.2"
+# MITRE ATT&CK support
+mitreattack-python = "^3.0.2"
+# Async utilities
+httpx = "^0.27.0"
+# Data processing
+joblib = "^1.3.0"
+
+[tool.poetry.group.dev.dependencies]
+# Code quality
+ruff = "^0.1.0"
+black = "^23.0.0"
+isort = "^5.12.0"
+mypy = "^1.7.0"
+pre-commit = "^3.5.0"
+# Testing
+pytest = "^7.4.0"
+pytest-asyncio = "^0.21.0"
+pytest-cov = "^4.1.0"
+# Development tools
+jupyter = "^1.0.0"
+notebook = "^7.0.0"
+ipywidgets = "^8.0.0"
+
+[tool.poetry.group.optional.dependencies]
+# Optional infrastructure dependencies for advanced features
+fastapi = "^0.104.0"
+uvicorn = "^0.24.0"
+redis = "^5.0.0"
+celery = "^5.3.0"
+sqlalchemy = "^2.0.0"
+alembic = "^1.12.0"
+psycopg2-binary = "^2.9.0"
+prometheus-client = "^0.19.0"
+structlog = "^23.0.0"
+dvc = "^3.0.0"
+mlflow = "^2.8.0"
+cryptography = "^41.0.0"
+matplotlib = "^3.8.3"
+tensorflow = "2.16.1"
+
+[tool.poetry.scripts]
+tie-mcp-server = "tie_mcp.server:main"
+
+[build-system]
+requires = ["poetry-core>=1.0.0"]
+build-backend = "poetry.core.masonry.api"
+
+[tool.ruff]
+line-length = 88
+target-version = "py310"
+select = ["E", "F", "W", "I", "B", "C4", "UP"]
+
+[tool.black]
+line-length = 88
+target-version = ["py310"]
+
+[tool.isort]
+profile = "black"
+line_length = 88
+
+[tool.mypy]
+python_version = "3.10"
+warn_return_any = true
+warn_unused_configs = true
+disallow_untyped_defs = true
+check_untyped_defs = true
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+python_files = ["test_*.py", "*_test.py"]
+python_classes = ["Test*"]
+python_functions = ["test_*"]
+addopts = "-v --cov=tie_mcp --cov-report=html --cov-report=term-missing"

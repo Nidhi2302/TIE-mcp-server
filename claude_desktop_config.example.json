@@ -1,0 +1,9 @@
+{
+  "mcpServers": {
+    "tie-mcp-server": {
+      "command": "python",
+      "args": ["-m", "tie_mcp.server"],
+      "cwd": "/path/to/your/tie-mcp-server"
+    }
+  }
+}

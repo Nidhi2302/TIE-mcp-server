@@ -1,0 +1,258 @@
+version: '3.8'
+
+services:
+  # TIE MCP Server - Production
+  tie-mcp-server:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile
+      target: production
+    container_name: tie-mcp-server
+    restart: unless-stopped
+    ports:
+      - "8000:8000"
+    environment:
+      - ENVIRONMENT=production
+      - DATABASE_URL=postgresql://tie:tie_password@postgres:5432/tie_mcp
+      - REDIS_URL=redis://redis:6379
+      - CELERY_BROKER_URL=redis://redis:6379/1
+      - CELERY_RESULT_BACKEND=redis://redis:6379/2
+      - MLFLOW_TRACKING_URI=http://mlflow:5000
+      - LOG_LEVEL=INFO
+    volumes:
+      - tie_models:/app/data/models
+      - tie_logs:/app/logs
+      - ./config/production.env:/app/.env
+    depends_on:
+      - postgres
+      - redis
+      - mlflow
+    networks:
+      - tie-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # TIE MCP Server - Development
+  tie-mcp-dev:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile
+      target: development
+    container_name: tie-mcp-dev
+    restart: unless-stopped
+    ports:
+      - "8001:8000"
+      - "8888:8888"
+    environment:
+      - ENVIRONMENT=development
+      - DATABASE_URL=postgresql://tie:tie_password@postgres:5432/tie_mcp_dev
+      - REDIS_URL=redis://redis:6379
+      - CELERY_BROKER_URL=redis://redis:6379/3
+      - CELERY_RESULT_BACKEND=redis://redis:6379/4
+      - MLFLOW_TRACKING_URI=http://mlflow:5000
+      - LOG_LEVEL=DEBUG
+    volumes:
+      - ../src:/app/src
+      - ../notebooks:/app/notebooks
+      - ../data:/app/data
+      - tie_dev_logs:/app/logs
+    depends_on:
+      - postgres
+      - redis
+      - mlflow
+    networks:
+      - tie-network
+    profiles:
+      - development
+
+  # PostgreSQL Database
+  postgres:
+    image: postgres:15-alpine
+    container_name: tie-postgres
+    restart: unless-stopped
+    environment:
+      - POSTGRES_DB=tie_mcp
+      - POSTGRES_USER=tie
+      - POSTGRES_PASSWORD=tie_password
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./init/postgres-init.sql:/docker-entrypoint-initdb.d/init.sql
+    ports:
+      - "5432:5432"
+    networks:
+      - tie-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U tie -d tie_mcp"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Redis for caching and task queue
+  redis:
+    image: redis:7-alpine
+    container_name: tie-redis
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    networks:
+      - tie-network
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Celery Worker for background tasks
+  celery-worker:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile
+      target: production
+    container_name: tie-celery-worker
+    restart: unless-stopped
+    command: celery -A tie_mcp.tasks worker --loglevel=info --concurrency=2
+    environment:
+      - ENVIRONMENT=production
+      - DATABASE_URL=postgresql://tie:tie_password@postgres:5432/tie_mcp
+      - REDIS_URL=redis://redis:6379
+      - CELERY_BROKER_URL=redis://redis:6379/1
+      - CELERY_RESULT_BACKEND=redis://redis:6379/2
+      - MLFLOW_TRACKING_URI=http://mlflow:5000
+    volumes:
+      - tie_models:/app/data/models
+      - tie_logs:/app/logs
+    depends_on:
+      - postgres
+      - redis
+    networks:
+      - tie-network
+
+  # Celery Beat for scheduled tasks
+  celery-beat:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile
+      target: production
+    container_name: tie-celery-beat
+    restart: unless-stopped
+    command: celery -A tie_mcp.tasks beat --loglevel=info
+    environment:
+      - ENVIRONMENT=production
+      - DATABASE_URL=postgresql://tie:tie_password@postgres:5432/tie_mcp
+      - REDIS_URL=redis://redis:6379
+      - CELERY_BROKER_URL=redis://redis:6379/1
+      - CELERY_RESULT_BACKEND=redis://redis:6379/2
+    volumes:
+      - tie_logs:/app/logs
+    depends_on:
+      - postgres
+      - redis
+    networks:
+      - tie-network
+
+  # MLFlow for experiment tracking
+  mlflow:
+    image: python:3.11-slim
+    container_name: tie-mlflow
+    restart: unless-stopped
+    ports:
+      - "5000:5000"
+    environment:
+      - MLFLOW_BACKEND_STORE_URI=postgresql://tie:tie_password@postgres:5432/mlflow
+      - MLFLOW_DEFAULT_ARTIFACT_ROOT=/mlflow/artifacts
+    volumes:
+      - mlflow_artifacts:/mlflow/artifacts
+    command: >
+      bash -c "
+        pip install mlflow psycopg2-binary &&
+        mlflow server
+        --backend-store-uri postgresql://tie:tie_password@postgres:5432/mlflow
+        --default-artifact-root /mlflow/artifacts
+        --host 0.0.0.0
+        --port 5000
+      "
+    depends_on:
+      - postgres
+    networks:
+      - tie-network
+
+  # Prometheus for metrics collection
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: tie-prometheus
+    restart: unless-stopped
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./config/prometheus.yml:/etc/prometheus/prometheus.yml
+      - prometheus_data:/prometheus
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+      - '--web.console.libraries=/etc/prometheus/console_libraries'
+      - '--web.console.templates=/etc/prometheus/consoles'
+    networks:
+      - tie-network
+
+  # Grafana for monitoring dashboards
+  grafana:
+    image: grafana/grafana:latest
+    container_name: tie-grafana
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    environment:
+      - GF_SECURITY_ADMIN_PASSWORD=admin
+    volumes:
+      - grafana_data:/var/lib/grafana
+      - ./config/grafana:/etc/grafana/provisioning
+    depends_on:
+      - prometheus
+    networks:
+      - tie-network
+
+  # Nginx reverse proxy
+  nginx:
+    image: nginx:alpine
+    container_name: tie-nginx
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./config/nginx.conf:/etc/nginx/nginx.conf
+      - ./ssl:/etc/nginx/ssl
+    depends_on:
+      - tie-mcp-server
+      - grafana
+    networks:
+      - tie-network
+    profiles:
+      - production
+
+volumes:
+  postgres_data:
+    driver: local
+  redis_data:
+    driver: local
+  tie_models:
+    driver: local
+  tie_logs:
+    driver: local
+  tie_dev_logs:
+    driver: local
+  mlflow_artifacts:
+    driver: local
+  prometheus_data:
+    driver: local
+  grafana_data:
+    driver: local
+
+networks:
+  tie-network:
+    driver: bridge
