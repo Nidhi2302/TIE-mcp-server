@@ -87,7 +87,7 @@ async def run_with_timeout(
         return await asyncio.wait_for(coro, timeout=timeout_seconds)
     except asyncio.TimeoutError:
         logger.error(f"Operation timed out after {timeout_seconds} seconds")
-        raise asyncio.TimeoutError(timeout_message)
+        raise asyncio.TimeoutError(timeout_message) from None
 
 
 async def gather_with_concurrency(
@@ -136,7 +136,9 @@ class AsyncLock:
             await asyncio.wait_for(self._lock.acquire(), timeout=self._timeout)
             return self
         except asyncio.TimeoutError:
-            raise asyncio.TimeoutError(f"Could not acquire lock within {self._timeout} seconds")
+            raise asyncio.TimeoutError(
+                f"Could not acquire lock within {self._timeout} seconds"
+            ) from None
 
     async def __aexit__(self, exc_type, exc_val, exc_tb):
         self._lock.release()
@@ -157,7 +159,10 @@ class RateLimiter:
             now = asyncio.get_event_loop().time()
 
             # Remove old calls outside the time window
-            self.calls = [call_time for call_time in self.calls if now - call_time < self.time_window]
+            self.calls = [
+                call_time for call_time in self.calls
+                if now - call_time < self.time_window
+            ]
 
             if len(self.calls) >= self.max_calls:
                 # Calculate how long to wait
@@ -213,7 +218,10 @@ async def retry_with_backoff(
                 logger.error(f"All {max_retries} retries exhausted for {func.__name__}")
                 break
 
-            logger.warning(f"Attempt {attempt + 1} failed for {func.__name__}: {e}. Retrying in {delay}s...")
+            logger.warning(
+                f"Attempt {attempt + 1} failed for {func.__name__}: {e}. "
+                f"Retrying in {delay}s..."
+            )
             await asyncio.sleep(delay)
             delay = min(delay * backoff_factor, max_delay)
 
@@ -250,7 +258,9 @@ class AsyncBatch:
 
         # Process batches with limited concurrency
         batch_coroutines = [processor(batch) for batch in batches]
-        batch_results = await gather_with_concurrency(batch_coroutines, self.max_concurrency)
+        batch_results = await gather_with_concurrency(
+            batch_coroutines, self.max_concurrency
+        )
 
         # Flatten results
         results = []

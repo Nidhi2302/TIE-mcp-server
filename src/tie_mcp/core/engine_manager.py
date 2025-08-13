@@ -35,7 +35,9 @@ logger = logging.getLogger(__name__)
 class TIEEngineManager:
     """High-level manager for TIE engine operations"""
 
-    def __init__(self, model_manager: ModelManager, metrics_collector: MetricsCollector):
+    def __init__(
+        self, model_manager: ModelManager, metrics_collector: MetricsCollector
+    ):
         self.model_manager = model_manager
         self.metrics_collector = metrics_collector
         self.current_engine: TechniqueInferenceEngine | None = None
@@ -191,7 +193,11 @@ class TIEEngineManager:
             )
 
             # Create TIE engine
-            pred_method = PredictionMethod.DOT if model_type in ["wals", "factorization"] else PredictionMethod.COSINE
+            pred_method = (
+                PredictionMethod.DOT
+                if model_type in ["wals", "factorization"]
+                else PredictionMethod.COSINE
+            )
 
             engine = TechniqueInferenceEngine(
                 training_data=training_data,
@@ -277,7 +283,9 @@ class TIEEngineManager:
             for k in k_values:
                 precision = await run_in_thread(engine.precision, k)
                 recall = await run_in_thread(engine.recall, k)
-                ndcg = await run_in_thread(engine.normalized_discounted_cumulative_gain, k)
+                ndcg = await run_in_thread(
+                    engine.normalized_discounted_cumulative_gain, k
+                )
 
                 metrics[f"precision_at_{k}"] = precision
                 metrics[f"recall_at_{k}"] = recall
@@ -329,7 +337,9 @@ class TIEEngineManager:
             logger.error(f"Error getting ATT&CK techniques: {e}")
             raise
 
-    async def _get_engine(self, model_id: str | None = None) -> TechniqueInferenceEngine:
+    async def _get_engine(
+        self, model_id: str | None = None
+    ) -> TechniqueInferenceEngine:
         """Get or load TIE engine"""
         if model_id:
             return await self.model_manager.load_model(model_id)
@@ -392,7 +402,9 @@ class TIEEngineManager:
         else:
             return {}
 
-    async def _evaluate_trained_model(self, engine: TechniqueInferenceEngine) -> dict[str, float]:
+    async def _evaluate_trained_model(
+        self, engine: TechniqueInferenceEngine
+    ) -> dict[str, float]:
         """Evaluate a trained model and return metrics"""
         metrics = {}
 

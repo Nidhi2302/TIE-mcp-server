@@ -28,7 +28,9 @@ async def ensure_directory(path: Path):
         raise
 
 
-async def safe_file_operation(operation: Callable[[], Any], max_retries: int = 3) -> Any:
+async def safe_file_operation(
+    operation: Callable[[], Any], max_retries: int = 3
+) -> Any:
     """
     Safely perform a file operation with retries
 
@@ -90,7 +92,7 @@ async def write_json_file(file_path: Path, data: dict, indent: int = 2):
         # Clean up temp file if it exists
         try:
             await aiofiles.os.remove(temp_path)
-        except:
+        except Exception:
             pass
         raise
 
@@ -212,7 +214,9 @@ async def file_exists(file_path: Path) -> bool:
         return False
 
 
-async def list_files(directory: Path, pattern: str = "*", recursive: bool = False) -> list[Path]:
+async def list_files(
+    directory: Path, pattern: str = "*", recursive: bool = False
+) -> list[Path]:
     """List files in a directory asynchronously"""
     try:
         def _list_files():

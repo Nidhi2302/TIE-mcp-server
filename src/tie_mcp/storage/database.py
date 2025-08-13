@@ -27,11 +27,15 @@ class Model(Base):
     """Database model for storing TIE models"""
     __tablename__ = "models"
 
-    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
+    id: Mapped[str] = mapped_column(
+        String(36), primary_key=True, default=lambda: str(uuid.uuid4())
+    )
     name: Mapped[str] = mapped_column(String(255), nullable=False)
     model_type: Mapped[str] = mapped_column(String(50), nullable=False)
     status: Mapped[str] = mapped_column(String(20), nullable=False, default="training")
-    hyperparameters: Mapped[dict[str, Any]] = mapped_column(JSON, nullable=False, default=dict)
+    hyperparameters: Mapped[dict[str, Any]] = mapped_column(
+        JSON, nullable=False, default=dict
+    )
     metrics: Mapped[dict[str, float]] = mapped_column(JSON, nullable=True)
     dataset_path: Mapped[str] = mapped_column(String(500), nullable=True)
     dataset_info: Mapped[dict[str, Any]] = mapped_column(JSON, nullable=True)
@@ -39,8 +43,14 @@ class Model(Base):
     description: Mapped[str] = mapped_column(Text, nullable=True)
     version: Mapped[str] = mapped_column(String(20), nullable=False, default="1.0")
     is_default: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
-    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
-    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now()
+    )
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        server_default=func.now(),
+        onupdate=func.now()
+    )
 
     __table_args__ = (
         Index('idx_models_status', 'status'),
@@ -54,15 +64,23 @@ class Dataset(Base):
     """Database model for storing dataset information"""
     __tablename__ = "datasets"
 
-    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
+    id: Mapped[str] = mapped_column(
+        String(36), primary_key=True, default=lambda: str(uuid.uuid4())
+    )
     name: Mapped[str] = mapped_column(String(255), nullable=False)
     description: Mapped[str] = mapped_column(Text, nullable=True)
     file_path: Mapped[str] = mapped_column(String(500), nullable=False)
     num_reports: Mapped[int] = mapped_column(Integer, nullable=False)
     num_techniques: Mapped[int] = mapped_column(Integer, nullable=False)
     metadata: Mapped[dict[str, Any]] = mapped_column(JSON, nullable=True)
-    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
-    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now()
+    )
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        server_default=func.now(),
+        onupdate=func.now()
+    )
 
     __table_args__ = (
         Index('idx_datasets_name', 'name'),
@@ -74,15 +92,21 @@ class PredictionLog(Base):
     """Database model for logging predictions"""
     __tablename__ = "prediction_logs"
 
-    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
+    id: Mapped[str] = mapped_column(
+        String(36), primary_key=True, default=lambda: str(uuid.uuid4())
+    )
     model_id: Mapped[str] = mapped_column(String(36), nullable=False)
     input_techniques: Mapped[list[str]] = mapped_column(JSON, nullable=False)
-    predicted_techniques: Mapped[list[dict[str, Any]]] = mapped_column(JSON, nullable=False)
+    predicted_techniques: Mapped[list[dict[str, Any]]] = mapped_column(
+        JSON, nullable=False
+    )
     prediction_method: Mapped[str] = mapped_column(String(20), nullable=False)
     execution_time_seconds: Mapped[float] = mapped_column(Float, nullable=False)
     user_id: Mapped[str] = mapped_column(String(100), nullable=True)
     ip_address: Mapped[str] = mapped_column(String(45), nullable=True)
-    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now()
+    )
 
     __table_args__ = (
         Index('idx_prediction_logs_model_id', 'model_id'),
@@ -95,18 +119,28 @@ class TrainingLog(Base):
     """Database model for logging training jobs"""
     __tablename__ = "training_logs"
 
-    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
-    model_id: Mapped[str] = mapped_column(String(36), nullable=True)  # Null if training failed
+    id: Mapped[str] = mapped_column(
+        String(36), primary_key=True, default=lambda: str(uuid.uuid4())
+    )
+    model_id: Mapped[str] = mapped_column(
+        String(36), nullable=True
+    )  # Null if training failed
     model_type: Mapped[str] = mapped_column(String(50), nullable=False)
     dataset_path: Mapped[str] = mapped_column(String(500), nullable=False)
     hyperparameters: Mapped[dict[str, Any]] = mapped_column(JSON, nullable=False)
     final_metrics: Mapped[dict[str, float]] = mapped_column(JSON, nullable=True)
     training_time_seconds: Mapped[float] = mapped_column(Float, nullable=True)
-    status: Mapped[str] = mapped_column(String(20), nullable=False)  # success, failure, running
+    status: Mapped[str] = mapped_column(
+        String(20), nullable=False
+    )  # success, failure, running
     error_message: Mapped[str] = mapped_column(Text, nullable=True)
     user_id: Mapped[str] = mapped_column(String(100), nullable=True)
-    started_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
-    completed_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=True)
+    started_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now()
+    )
+    completed_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), nullable=True
+    )
 
     __table_args__ = (
         Index('idx_training_logs_model_id', 'model_id'),
@@ -120,7 +154,9 @@ class AuditLog(Base):
     """Database model for audit logging"""
     __tablename__ = "audit_logs"
 
-    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
+    id: Mapped[str] = mapped_column(
+        String(36), primary_key=True, default=lambda: str(uuid.uuid4())
+    )
     event_type: Mapped[str] = mapped_column(String(100), nullable=False)
     component: Mapped[str] = mapped_column(String(100), nullable=False)
     resource_type: Mapped[str] = mapped_column(String(50), nullable=True)
@@ -128,7 +164,9 @@ class AuditLog(Base):
     user_id: Mapped[str] = mapped_column(String(100), nullable=True)
     ip_address: Mapped[str] = mapped_column(String(45), nullable=True)
     details: Mapped[dict[str, Any]] = mapped_column(JSON, nullable=True)
-    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now()
+    )
 
     __table_args__ = (
         Index('idx_audit_logs_event_type', 'event_type'),
@@ -231,7 +269,11 @@ class DatabaseManager:
                 return None
 
         except Exception as e:
-            logger.error("Error getting model from database", model_id=model_id, error=str(e))
+            logger.error(
+                "Error getting model from database",
+                model_id=model_id,
+                error=str(e)
+            )
             raise
 
     async def list_models(self, status: str | None = None) -> list[dict[str, Any]]:
@@ -264,7 +306,11 @@ class DatabaseManager:
                     raise ValueError(f"Model {model_id} not found")
 
         except Exception as e:
-            logger.error("Error updating model in database", model_id=model_id, error=str(e))
+            logger.error(
+                "Error updating model in database",
+                model_id=model_id,
+                error=str(e)
+            )
             raise
 
     async def delete_model(self, model_id: str):
@@ -280,7 +326,11 @@ class DatabaseManager:
                     raise ValueError(f"Model {model_id} not found")
 
         except Exception as e:
-            logger.error("Error deleting model from database", model_id=model_id, error=str(e))
+            logger.error(
+                "Error deleting model from database",
+                model_id=model_id,
+                error=str(e)
+            )
             raise
 
     async def set_default_model(self, model_id: str):
@@ -288,7 +338,9 @@ class DatabaseManager:
         try:
             async with self.get_session() as session:
                 # Unset current default
-                current_default = await session.query(Model).filter(Model.is_default).first()
+                current_default = await session.query(Model).filter(
+                    Model.is_default
+                ).first()
                 if current_default:
                     current_default.is_default = False
 

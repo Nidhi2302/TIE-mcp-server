@@ -291,7 +291,9 @@ class MetricsCollector:
         except Exception as e:
             logger.error("Error recording training metrics", error=str(e))
 
-    async def record_error(self, component: str, error_type: str, error_message: str = ""):
+    async def record_error(
+        self, component: str, error_type: str, error_message: str = ""
+    ):
         """Record error metrics"""
         try:
             # Update Prometheus metrics
@@ -322,7 +324,9 @@ class MetricsCollector:
         """Record model save event"""
         try:
             self.model_count.labels(status="active").inc()
-            logger.debug("Model save recorded", model_id=model_id, model_type=model_type)
+            logger.debug(
+                "Model save recorded", model_id=model_id, model_type=model_type
+            )
         except Exception as e:
             logger.error("Error recording model save", error=str(e))
 
@@ -425,7 +429,9 @@ class MetricsCollector:
             logger.error("Error getting system metrics", error=str(e))
             return {}
 
-    async def get_prediction_metrics(self, since: datetime | None = None) -> list[dict[str, Any]]:
+    async def get_prediction_metrics(
+        self, since: datetime | None = None
+    ) -> list[dict[str, Any]]:
         """Get prediction metrics since a specific time"""
         try:
             since = since or (datetime.utcnow() - timedelta(hours=24))
@@ -447,7 +453,9 @@ class MetricsCollector:
             logger.error("Error getting prediction metrics", error=str(e))
             return []
 
-    async def get_training_metrics(self, since: datetime | None = None) -> list[dict[str, Any]]:
+    async def get_training_metrics(
+        self, since: datetime | None = None
+    ) -> list[dict[str, Any]]:
         """Get training metrics since a specific time"""
         try:
             since = since or (datetime.utcnow() - timedelta(days=7))
@@ -469,7 +477,9 @@ class MetricsCollector:
             logger.error("Error getting training metrics", error=str(e))
             return []
 
-    async def get_error_metrics(self, since: datetime | None = None) -> list[dict[str, Any]]:
+    async def get_error_metrics(
+        self, since: datetime | None = None
+    ) -> list[dict[str, Any]]:
         """Get error metrics since a specific time"""
         try:
             since = since or (datetime.utcnow() - timedelta(hours=24))
@@ -517,7 +527,10 @@ class MetricsCollector:
                 })
 
             # Check memory usage
-            if system_metrics.get("memory_usage_percent", 0) > thresholds["memory_usage"]:
+            if (
+                system_metrics.get("memory_usage_percent", 0)
+                > thresholds["memory_usage"]
+            ):
                 alerts.append({
                     "metric": "memory_usage",
                     "current_value": system_metrics["memory_usage_percent"],
@@ -535,7 +548,10 @@ class MetricsCollector:
                 })
 
             # Check inference latency
-            if system_metrics.get("average_prediction_time", 0) > thresholds["inference_latency_p95"]:
+            if (
+                system_metrics.get("average_prediction_time", 0)
+                > thresholds["inference_latency_p95"]
+            ):
                 alerts.append({
                     "metric": "inference_latency",
                     "current_value": system_metrics["average_prediction_time"],

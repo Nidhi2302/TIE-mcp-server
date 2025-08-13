@@ -22,7 +22,9 @@ async def handle_list_tools() -> list[types.Tool]:
     return [
         types.Tool(
             name="predict_techniques",
-            description="Predict MITRE ATT&CK techniques for a given set of observed techniques",
+            description=(
+                "Predict MITRE ATT&CK techniques for a given set of observed techniques"
+            ),
             inputSchema={
                 "type": "object",
                 "properties": {
@@ -126,9 +128,15 @@ async def handle_call_tool(name: str, arguments: dict) -> list[types.TextContent
     elif name == "get_attack_techniques":
         response = {
             "techniques": [
-                {"technique_id": "T1059", "technique_name": "Command and Scripting Interpreter"},
+                {
+                    "technique_id": "T1059",
+                    "technique_name": "Command and Scripting Interpreter"
+                },
                 {"technique_id": "T1055", "technique_name": "Process Injection"},
-                {"technique_id": "T1082", "technique_name": "System Information Discovery"}
+                {
+                    "technique_id": "T1082",
+                    "technique_name": "System Information Discovery"
+                }
             ],
             "total_count": 3,
             "message": "Mock ATT&CK techniques data"
@@ -179,9 +187,16 @@ async def handle_read_resource(uri: str) -> str:
     if uri == "models://list":
         return '{"models": [], "message": "No models available yet"}'
     elif uri == "attack://techniques":
-        return '{"techniques": [{"id": "T1059", "name": "Command and Scripting Interpreter"}], "message": "Mock ATT&CK data"}'
+        return (
+            '{"techniques": [{"id": "T1059", '
+            '"name": "Command and Scripting Interpreter"}], '
+            '"message": "Mock ATT&CK data"}'
+        )
     elif uri == "metrics://system":
-        return '{"cpu_usage": 25.0, "memory_usage": 45.0, "message": "Mock system metrics"}'
+        return (
+            '{"cpu_usage": 25.0, "memory_usage": 45.0, '
+            '"message": "Mock system metrics"}'
+        )
     else:
         raise ValueError(f"Unknown resource: {uri}")
 

@@ -171,7 +171,9 @@ class AuditLogger:
     def __init__(self):
         self.logger = ContextualLogger("audit")
 
-    def log_model_training_started(self, model_id: str, model_type: str, user_id: str | None = None):
+    def log_model_training_started(
+        self, model_id: str, model_type: str, user_id: str | None = None
+    ):
         """Log model training start"""
         self.logger.info(
             "Model training started",
@@ -181,8 +183,13 @@ class AuditLogger:
             user_id=user_id
         )
 
-    def log_model_training_completed(self, model_id: str, model_type: str,
-                                   metrics: dict[str, float], user_id: str | None = None):
+    def log_model_training_completed(
+        self,
+        model_id: str,
+        model_type: str,
+        metrics: dict[str, float],
+        user_id: str | None = None
+    ):
         """Log model training completion"""
         self.logger.info(
             "Model training completed",
@@ -193,7 +200,9 @@ class AuditLogger:
             user_id=user_id
         )
 
-    def log_model_training_failed(self, model_type: str, error: str, user_id: str | None = None):
+    def log_model_training_failed(
+        self, model_type: str, error: str, user_id: str | None = None
+    ):
         """Log model training failure"""
         self.logger.error(
             "Model training failed",
@@ -215,7 +224,9 @@ class AuditLogger:
             user_id=user_id
         )
 
-    def log_model_deleted(self, model_id: str, model_name: str, user_id: str | None = None):
+    def log_model_deleted(
+        self, model_id: str, model_name: str, user_id: str | None = None
+    ):
         """Log model deletion"""
         self.logger.info(
             "Model deleted",
