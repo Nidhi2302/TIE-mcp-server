@@ -219,7 +219,7 @@ class FactorizationRecommender(Recommender):
         # preliminaries
         optimizer = keras.optimizers.SGD(learning_rate=learning_rate)
 
-        for i in range(epochs + 1):
+        for _i in range(epochs + 1):
             with tf.GradientTape() as tape:
                 # need to predict here and not in loss so doesn't affect gradient
                 predictions = self._predict(data)
@@ -231,7 +231,7 @@ class FactorizationRecommender(Recommender):
                     gravity_coefficient,
                 )
             gradients = tape.gradient(loss, [self._U, self._V])
-            optimizer.apply_gradients(zip(gradients, [self._U, self._V]))
+            optimizer.apply_gradients(zip(gradients, [self._U, self._V], strict=False))
 
         self._checkrep()
 
@@ -318,7 +318,7 @@ class FactorizationRecommender(Recommender):
             )
         )
 
-        for i in range(epochs + 1):
+        for _i in range(epochs + 1):
             with tf.GradientTape() as tape:
                 # need to predict here and not in loss so doesn't affect gradient
                 # V is nxk, embedding is kx1
@@ -338,7 +338,7 @@ class FactorizationRecommender(Recommender):
                 )
 
             gradients = tape.gradient(loss, [embedding])
-            optimizer.apply_gradients(zip(gradients, [embedding]))
+            optimizer.apply_gradients(zip(gradients, [embedding], strict=False))
 
         assert not np.isnan(embedding.numpy()).any()
         self._checkrep()

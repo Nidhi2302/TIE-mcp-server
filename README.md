@@ -432,7 +432,7 @@ See [CHANGELOG.md](CHANGELOG.md) for a detailed history of changes and releases.
 
 ## 🔗 Related Projects
 
-- [MITRE TIE](https://github.com/mitre-attack/tie): Original Technique Inference Engine
+- [MITRE TIE](https://ctid.mitre.org/projects/technique-inference-engine/): Original Technique Inference Engine
 - [MCP Specification](https://modelcontextprotocol.io/): Model Context Protocol documentation
 - [MITRE ATT&CK](https://attack.mitre.org/): MITRE ATT&CK framework
 

@@ -2,10 +2,11 @@
 API schemas for TIE MCP Server
 """
 
-from typing import List, Dict, Any, Optional, Union
 from datetime import datetime
-from pydantic import BaseModel, Field, validator
 from enum import Enum
+from typing import Any
+
+from pydantic import BaseModel, Field, validator
 
 
 class ModelType(str, Enum):
@@ -35,11 +36,11 @@ class ModelStatus(str, Enum):
 # Request schemas
 class PredictionRequest(BaseModel):
     """Request for technique prediction"""
-    techniques: List[str] = Field(..., description="List of observed technique IDs")
-    model_id: Optional[str] = Field(None, description="Optional model ID to use")
+    techniques: list[str] = Field(..., description="List of observed technique IDs")
+    model_id: str | None = Field(None, description="Optional model ID to use")
     top_k: int = Field(20, ge=1, le=100, description="Number of top predictions")
     prediction_method: PredictionMethod = Field(PredictionMethod.DOT)
-    
+
     @validator("techniques")
     def validate_techniques(cls, v):
         if not v:
@@ -51,14 +52,14 @@ class TrainingRequest(BaseModel):
     """Request for model training"""
     dataset_path: str = Field(..., description="Path to training dataset")
     model_type: ModelType = Field(ModelType.WALS)
-    hyperparameters: Dict[str, Any] = Field(default_factory=dict)
+    hyperparameters: dict[str, Any] = Field(default_factory=dict)
     validation_ratio: float = Field(0.1, ge=0.0, le=0.5)
     test_ratio: float = Field(0.2, ge=0.0, le=0.5)
     embedding_dimension: int = Field(4, ge=1, le=128)
     auto_hyperparameter_tuning: bool = Field(True)
-    model_name: Optional[str] = Field(None, description="Optional model name")
-    description: Optional[str] = Field(None, description="Model description")
-    
+    model_name: str | None = Field(None, description="Optional model name")
+    description: str | None = Field(None, description="Model description")
+
     @validator("validation_ratio", "test_ratio")
     def validate_ratios(cls, v, values):
         if "validation_ratio" in values and "test_ratio" in values:
@@ -69,15 +70,15 @@ class TrainingRequest(BaseModel):
 
 class DatasetCreationRequest(BaseModel):
     """Request for dataset creation"""
-    reports: List[Dict[str, Any]] = Field(..., description="List of CTI reports")
+    reports: list[dict[str, Any]] = Field(..., description="List of CTI reports")
     dataset_name: str = Field(..., description="Name for the dataset")
     description: str = Field("", description="Dataset description")
-    
+
     @validator("reports")
     def validate_reports(cls, v):
         if not v:
             raise ValueError("At least one report must be provided")
-        
+
         for i, report in enumerate(v):
             if "id" not in report:
                 raise ValueError(f"Report {i} missing 'id' field")
@@ -85,7 +86,7 @@ class DatasetCreationRequest(BaseModel):
                 raise ValueError(f"Report {i} missing 'techniques' field")
             if not isinstance(report["techniques"], list):
                 raise ValueError(f"Report {i} 'techniques' must be a list")
-        
+
         return v
 
 
@@ -100,8 +101,8 @@ class PredictedTechnique(BaseModel):
 
 class PredictionResponse(BaseModel):
     """Response for technique prediction"""
-    predicted_techniques: List[PredictedTechnique]
-    input_techniques: List[str]
+    predicted_techniques: list[PredictedTechnique]
+    input_techniques: list[str]
     model_id: str
     prediction_method: str
     execution_time_seconds: float
@@ -110,15 +111,15 @@ class PredictionResponse(BaseModel):
 
 class ModelMetrics(BaseModel):
     """Model performance metrics"""
-    precision_at_10: Optional[float] = None
-    precision_at_20: Optional[float] = None
-    precision_at_50: Optional[float] = None
-    recall_at_10: Optional[float] = None
-    recall_at_20: Optional[float] = None
-    recall_at_50: Optional[float] = None
-    ndcg_at_10: Optional[float] = None
-    ndcg_at_20: Optional[float] = None
-    ndcg_at_50: Optional[float] = None
+    precision_at_10: float | None = None
+    precision_at_20: float | None = None
+    precision_at_50: float | None = None
+    recall_at_10: float | None = None
+    recall_at_20: float | None = None
+    recall_at_50: float | None = None
+    ndcg_at_10: float | None = None
+    ndcg_at_20: float | None = None
+    ndcg_at_50: float | None = None
 
 
 class DatasetInfo(BaseModel):
@@ -133,8 +134,8 @@ class TrainingResponse(BaseModel):
     """Response for model training"""
     model_id: str
     model_type: ModelType
-    hyperparameters: Dict[str, Any]
-    metrics: Dict[str, float]
+    hyperparameters: dict[str, Any]
+    metrics: dict[str, float]
     training_time_seconds: float
     dataset_info: DatasetInfo
     timestamp: datetime = Field(default_factory=datetime.utcnow)
@@ -143,25 +144,25 @@ class TrainingResponse(BaseModel):
 class ModelInfo(BaseModel):
     """Model information"""
     id: str
-    name: Optional[str]
+    name: str | None
     model_type: ModelType
     status: ModelStatus
-    hyperparameters: Dict[str, Any]
-    metrics: Optional[ModelMetrics]
-    dataset_path: Optional[str]
-    dataset_info: Optional[DatasetInfo]
+    hyperparameters: dict[str, Any]
+    metrics: ModelMetrics | None
+    dataset_path: str | None
+    dataset_info: DatasetInfo | None
     created_at: datetime
     updated_at: datetime
     is_default: bool = False
-    description: Optional[str] = None
+    description: str | None = None
     version: str = "1.0"
 
 
 class ModelEvaluationResponse(BaseModel):
     """Response for model evaluation"""
     model_id: str
-    metrics: Dict[str, float]
-    k_values: List[int]
+    metrics: dict[str, float]
+    k_values: list[int]
     timestamp: datetime = Field(default_factory=datetime.utcnow)
 
 
@@ -169,10 +170,10 @@ class AttackTechniqueInfo(BaseModel):
     """ATT&CK technique information"""
     technique_id: str
     technique_name: str
-    tactic: Optional[str] = None
-    description: Optional[str] = None
-    platforms: Optional[List[str]] = None
-    data_sources: Optional[List[str]] = None
+    tactic: str | None = None
+    description: str | None = None
+    platforms: list[str] | None = None
+    data_sources: list[str] | None = None
 
 
 class DatasetCreationResponse(BaseModel):
@@ -188,14 +189,14 @@ class DatasetCreationResponse(BaseModel):
 
 class ModelListResponse(BaseModel):
     """Response for listing models"""
-    models: List[ModelInfo]
+    models: list[ModelInfo]
     total_count: int
-    default_model_id: Optional[str] = None
+    default_model_id: str | None = None
 
 
 class DatasetListResponse(BaseModel):
     """Response for listing datasets"""
-    datasets: List[DatasetCreationResponse]
+    datasets: list[DatasetCreationResponse]
     total_count: int
 
 
@@ -218,15 +219,15 @@ class HealthCheckResponse(BaseModel):
     status: str
     version: str
     timestamp: datetime = Field(default_factory=datetime.utcnow)
-    components: Dict[str, str] = Field(default_factory=dict)
-    metrics: Optional[SystemMetrics] = None
+    components: dict[str, str] = Field(default_factory=dict)
+    metrics: SystemMetrics | None = None
 
 
 class ErrorResponse(BaseModel):
     """Error response"""
     error: str
-    detail: Optional[str] = None
-    error_code: Optional[str] = None
+    detail: str | None = None
+    error_code: str | None = None
     timestamp: datetime = Field(default_factory=datetime.utcnow)
 
 
@@ -245,11 +246,11 @@ class TaskInfo(BaseModel):
     task_id: str
     status: TaskStatus
     progress: float = Field(0.0, ge=0.0, le=100.0)
-    result: Optional[Dict[str, Any]] = None
-    error: Optional[str] = None
-    started_at: Optional[datetime] = None
-    completed_at: Optional[datetime] = None
-    estimated_completion: Optional[datetime] = None
+    result: dict[str, Any] | None = None
+    error: str | None = None
+    started_at: datetime | None = None
+    completed_at: datetime | None = None
+    estimated_completion: datetime | None = None
 
 
 class TaskResponse(BaseModel):
@@ -257,15 +258,15 @@ class TaskResponse(BaseModel):
     task_id: str
     status: TaskStatus
     message: str
-    estimated_completion_minutes: Optional[float] = None
+    estimated_completion_minutes: float | None = None
 
 
 # Batch operation schemas
 class BatchPredictionRequest(BaseModel):
     """Request for batch prediction"""
-    prediction_requests: List[PredictionRequest]
-    model_id: Optional[str] = None
-    
+    prediction_requests: list[PredictionRequest]
+    model_id: str | None = None
+
     @validator("prediction_requests")
     def validate_batch_size(cls, v):
         if len(v) > 1000:  # Reasonable batch limit
@@ -275,7 +276,7 @@ class BatchPredictionRequest(BaseModel):
 
 class BatchPredictionResponse(BaseModel):
     """Response for batch prediction"""
-    results: List[PredictionResponse]
+    results: list[PredictionResponse]
     total_requests: int
     successful_requests: int
     failed_requests: int
@@ -287,7 +288,7 @@ class BatchPredictionResponse(BaseModel):
 class ModelConfig(BaseModel):
     """Model configuration"""
     model_type: ModelType
-    hyperparameters: Dict[str, Any]
+    hyperparameters: dict[str, Any]
     embedding_dimension: int = 4
     prediction_method: PredictionMethod = PredictionMethod.DOT
 

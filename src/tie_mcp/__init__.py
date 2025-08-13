@@ -1,7 +1,7 @@
 """
 TIE MCP Server - Model Context Protocol server for Technique Inference Engine
 
-This package provides a comprehensive MCP server implementation for the 
+This package provides a comprehensive MCP server implementation for the
 Technique Inference Engine (TIE) project, enabling scalable inference
 of MITRE ATT&CK techniques with model retraining capabilities.
 """

@@ -4,18 +4,17 @@ Main MCP Server implementation for TIE (Technique Inference Engine)
 
 import asyncio
 import logging
-from typing import Any, Dict, List, Optional, Sequence
 
-from mcp.server.models import InitializationOptions
 import mcp.server.stdio
 import mcp.types as types
 from mcp.server import NotificationOptions, Server
+from mcp.server.models import InitializationOptions
 
 logger = logging.getLogger(__name__)
 
 # Create server instance
 server = Server("tie-mcp-server")
-    
+
 # Tool implementations
 @server.list_tools()
 async def handle_list_tools() -> list[types.Tool]:
@@ -94,13 +93,13 @@ async def handle_list_tools() -> list[types.Tool]:
 @server.call_tool()
 async def handle_call_tool(name: str, arguments: dict) -> list[types.TextContent]:
     """Handle tool calls"""
-    
+
     if name == "predict_techniques":
         techniques = arguments.get("techniques", [])
         model_id = arguments.get("model_id")
-        top_k = arguments.get("top_k", 20)
+        arguments.get("top_k", 20)
         prediction_method = arguments.get("prediction_method", "dot")
-        
+
         response = {
             "predicted_techniques": [
                 {
@@ -121,9 +120,9 @@ async def handle_call_tool(name: str, arguments: dict) -> list[types.TextContent
             "prediction_method": prediction_method,
             "execution_time_seconds": 0.1
         }
-        
+
         return [types.TextContent(type="text", text=str(response))]
-    
+
     elif name == "get_attack_techniques":
         response = {
             "techniques": [
@@ -134,18 +133,18 @@ async def handle_call_tool(name: str, arguments: dict) -> list[types.TextContent
             "total_count": 3,
             "message": "Mock ATT&CK techniques data"
         }
-        
+
         return [types.TextContent(type="text", text=str(response))]
-    
+
     elif name == "list_models":
         response = {
             "models": [],
             "total_count": 0,
             "message": "No models available yet"
         }
-        
+
         return [types.TextContent(type="text", text=str(response))]
-    
+
     else:
         raise ValueError(f"Unknown tool: {name}")
 
@@ -176,7 +175,7 @@ async def handle_list_resources() -> list[types.Resource]:
 @server.read_resource()
 async def handle_read_resource(uri: str) -> str:
     """Handle resource read requests"""
-    
+
     if uri == "models://list":
         return '{"models": [], "message": "No models available yet"}'
     elif uri == "attack://techniques":
@@ -191,7 +190,7 @@ async def main():
     # Setup basic logging
     logging.basicConfig(level=logging.INFO)
     logger.info("Starting TIE MCP Server...")
-    
+
     # Run server with stdio transport
     async with mcp.server.stdio.stdio_server() as (read_stream, write_stream):
         await server.run(

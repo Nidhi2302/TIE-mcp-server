@@ -129,7 +129,7 @@ class BPRRecommender(Recommender):
         non_observations = 1 - data
 
         unique_users, counts = np.unique(all_u, return_counts=True)
-        value_to_count = dict(zip(unique_users, counts))
+        value_to_count = dict(zip(unique_users, counts, strict=False))
 
         u_to_j = {}
 

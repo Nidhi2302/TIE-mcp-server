@@ -3,15 +3,17 @@ File utilities for TIE MCP Server
 """
 
 import asyncio
+import json
+import logging
+import pickle
+import shutil
+import tempfile
+from collections.abc import Callable
+from pathlib import Path
+from typing import Any
+
 import aiofiles
 import aiofiles.os
-import logging
-from pathlib import Path
-from typing import Any, Callable, Optional
-import json
-import pickle
-import tempfile
-import shutil
 
 logger = logging.getLogger(__name__)
 
@@ -29,16 +31,16 @@ async def ensure_directory(path: Path):
 async def safe_file_operation(operation: Callable[[], Any], max_retries: int = 3) -> Any:
     """
     Safely perform a file operation with retries
-    
+
     Args:
         operation: Function to execute
         max_retries: Maximum number of retries
-        
+
     Returns:
         Operation result
     """
     last_exception = None
-    
+
     for attempt in range(max_retries):
         try:
             # Run the operation in a thread pool to avoid blocking
@@ -50,7 +52,7 @@ async def safe_file_operation(operation: Callable[[], Any], max_retries: int = 3
             logger.warning(f"File operation attempt {attempt + 1} failed: {e}")
             if attempt < max_retries - 1:
                 await asyncio.sleep(0.1 * (attempt + 1))  # Exponential backoff
-    
+
     logger.error(f"File operation failed after {max_retries} attempts")
     raise last_exception
 
@@ -58,7 +60,7 @@ async def safe_file_operation(operation: Callable[[], Any], max_retries: int = 3
 async def read_json_file(file_path: Path) -> dict:
     """Read a JSON file asynchronously"""
     try:
-        async with aiofiles.open(file_path, 'r', encoding='utf-8') as f:
+        async with aiofiles.open(file_path, encoding='utf-8') as f:
             content = await f.read()
             return json.loads(content)
     except Exception as e:
@@ -71,18 +73,18 @@ async def write_json_file(file_path: Path, data: dict, indent: int = 2):
     try:
         # Ensure parent directory exists
         await ensure_directory(file_path.parent)
-        
+
         # Write to temporary file first, then rename for atomic operation
         temp_path = file_path.with_suffix(file_path.suffix + '.tmp')
-        
+
         async with aiofiles.open(temp_path, 'w', encoding='utf-8') as f:
             content = json.dumps(data, indent=indent, ensure_ascii=False)
             await f.write(content)
-        
+
         # Atomic rename
         await aiofiles.os.rename(temp_path, file_path)
         logger.debug(f"Successfully wrote JSON file: {file_path}")
-        
+
     except Exception as e:
         logger.error(f"Error writing JSON file {file_path}: {e}")
         # Clean up temp file if it exists
@@ -99,7 +101,7 @@ async def read_pickle_file(file_path: Path) -> Any:
         def _read_pickle():
             with open(file_path, 'rb') as f:
                 return pickle.load(f)
-        
+
         return await safe_file_operation(_read_pickle)
     except Exception as e:
         logger.error(f"Error reading pickle file {file_path}: {e}")
@@ -111,7 +113,7 @@ async def write_pickle_file(file_path: Path, data: Any):
     try:
         # Ensure parent directory exists
         await ensure_directory(file_path.parent)
-        
+
         def _write_pickle():
             # Write to temporary file first
             temp_path = file_path.with_suffix(file_path.suffix + '.tmp')
@@ -119,10 +121,10 @@ async def write_pickle_file(file_path: Path, data: Any):
                 pickle.dump(data, f)
             # Atomic rename
             shutil.move(temp_path, file_path)
-        
+
         await safe_file_operation(_write_pickle)
         logger.debug(f"Successfully wrote pickle file: {file_path}")
-        
+
     except Exception as e:
         logger.error(f"Error writing pickle file {file_path}: {e}")
         raise
@@ -133,13 +135,13 @@ async def copy_file(src: Path, dst: Path):
     try:
         # Ensure destination directory exists
         await ensure_directory(dst.parent)
-        
+
         def _copy_file():
             shutil.copy2(src, dst)
-        
+
         await safe_file_operation(_copy_file)
         logger.debug(f"Successfully copied file: {src} -> {dst}")
-        
+
     except Exception as e:
         logger.error(f"Error copying file {src} to {dst}: {e}")
         raise
@@ -150,10 +152,10 @@ async def move_file(src: Path, dst: Path):
     try:
         # Ensure destination directory exists
         await ensure_directory(dst.parent)
-        
+
         await aiofiles.os.rename(src, dst)
         logger.debug(f"Successfully moved file: {src} -> {dst}")
-        
+
     except Exception as e:
         logger.error(f"Error moving file {src} to {dst}: {e}")
         raise
@@ -181,7 +183,7 @@ async def delete_directory(dir_path: Path, recursive: bool = True):
                     shutil.rmtree(dir_path)
                 else:
                     dir_path.rmdir()
-            
+
             await safe_file_operation(_delete_dir)
             logger.debug(f"Successfully deleted directory: {dir_path}")
         else:
@@ -218,7 +220,7 @@ async def list_files(directory: Path, pattern: str = "*", recursive: bool = Fals
                 return list(directory.rglob(pattern))
             else:
                 return list(directory.glob(pattern))
-        
+
         return await safe_file_operation(_list_files)
     except Exception as e:
         logger.error(f"Error listing files in {directory}: {e}")
@@ -234,7 +236,7 @@ async def get_directory_size(directory: Path) -> int:
                 if file_path.is_file():
                     total_size += file_path.stat().st_size
             return total_size
-        
+
         return await safe_file_operation(_get_dir_size)
     except Exception as e:
         logger.error(f"Error getting directory size for {directory}: {e}")
@@ -243,21 +245,21 @@ async def get_directory_size(directory: Path) -> int:
 
 class TemporaryDirectory:
     """Async context manager for temporary directories"""
-    
+
     def __init__(self, prefix: str = "tie_mcp_", suffix: str = ""):
         self.prefix = prefix
         self.suffix = suffix
-        self.path: Optional[Path] = None
-    
+        self.path: Path | None = None
+
     async def __aenter__(self) -> Path:
         def _create_temp_dir():
             return tempfile.mkdtemp(prefix=self.prefix, suffix=self.suffix)
-        
+
         temp_dir = await safe_file_operation(_create_temp_dir)
         self.path = Path(temp_dir)
         logger.debug(f"Created temporary directory: {self.path}")
         return self.path
-    
+
     async def __aexit__(self, exc_type, exc_val, exc_tb):
         if self.path and await aiofiles.os.path.exists(self.path):
             await delete_directory(self.path, recursive=True)
@@ -266,13 +268,13 @@ class TemporaryDirectory:
 
 class TemporaryFile:
     """Async context manager for temporary files"""
-    
+
     def __init__(self, prefix: str = "tie_mcp_", suffix: str = "", delete: bool = True):
         self.prefix = prefix
         self.suffix = suffix
         self.delete = delete
-        self.path: Optional[Path] = None
-    
+        self.path: Path | None = None
+
     async def __aenter__(self) -> Path:
         def _create_temp_file():
             fd, temp_path = tempfile.mkstemp(prefix=self.prefix, suffix=self.suffix)
@@ -280,12 +282,12 @@ class TemporaryFile:
             import os
             os.close(fd)
             return temp_path
-        
+
         temp_file = await safe_file_operation(_create_temp_file)
         self.path = Path(temp_file)
         logger.debug(f"Created temporary file: {self.path}")
         return self.path
-    
+
     async def __aexit__(self, exc_type, exc_val, exc_tb):
         if self.delete and self.path and await file_exists(self.path):
             await delete_file(self.path)
@@ -305,24 +307,24 @@ async def rotate_files(file_path: Path, max_rotations: int = 5):
     try:
         if not await file_exists(file_path):
             return
-        
+
         # Rotate existing files
         for i in range(max_rotations - 1, 0, -1):
             old_file = file_path.with_suffix(f"{file_path.suffix}.{i}")
             new_file = file_path.with_suffix(f"{file_path.suffix}.{i + 1}")
-            
+
             if await file_exists(old_file):
                 if i == max_rotations - 1:
                     await delete_file(old_file)
                 else:
                     await move_file(old_file, new_file)
-        
+
         # Move current file to .1
         rotated_file = file_path.with_suffix(f"{file_path.suffix}.1")
         await move_file(file_path, rotated_file)
-        
+
         logger.debug(f"Rotated file: {file_path}")
-        
+
     except Exception as e:
         logger.error(f"Error rotating file {file_path}: {e}")
         raise
