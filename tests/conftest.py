@@ -3,20 +3,21 @@ Test configuration and fixtures for TIE MCP Server
 """
 
 import asyncio
-import pytest
-import pytest_asyncio
-from pathlib import Path
-from typing import Generator, AsyncGenerator
-import tempfile
 import json
+import tempfile
+from collections.abc import AsyncGenerator
+from pathlib import Path
 from unittest.mock import AsyncMock, MagicMock
 
+import pytest
+import pytest_asyncio
+
 from tie_mcp.config.settings import Settings
-from tie_mcp.storage.database import DatabaseManager
-from tie_mcp.monitoring.metrics import MetricsCollector
-from tie_mcp.models.model_manager import ModelManager
 from tie_mcp.core.engine_manager import TIEEngineManager
+from tie_mcp.models.model_manager import ModelManager
+from tie_mcp.monitoring.metrics import MetricsCollector
 from tie_mcp.server import TIEMCPServer
+from tie_mcp.storage.database import DatabaseManager
 
 
 @pytest.fixture(scope="session")
@@ -59,7 +60,7 @@ def sample_dataset() -> dict:
                 "metadata": {"source": "test"}
             },
             {
-                "id": "report_2", 
+                "id": "report_2",
                 "mitre_techniques": {
                     "T1059": 1,
                     "T1053": 1,
@@ -155,7 +156,7 @@ async def mock_db_manager() -> AsyncGenerator[DatabaseManager, None]:
     db_manager.initialize = AsyncMock()
     db_manager.cleanup = AsyncMock()
     db_manager.health_check = AsyncMock(return_value=True)
-    
+
     # Mock model operations
     db_manager.save_model = AsyncMock(return_value="test-model-id")
     db_manager.get_model = AsyncMock(return_value={
@@ -169,7 +170,7 @@ async def mock_db_manager() -> AsyncGenerator[DatabaseManager, None]:
     })
     db_manager.list_models = AsyncMock(return_value=[])
     db_manager.delete_model = AsyncMock()
-    
+
     yield db_manager
 
 
@@ -200,7 +201,7 @@ async def mock_model_manager(mock_db_manager, mock_metrics_collector) -> AsyncGe
     model_manager.get_model_info = AsyncMock()
     model_manager.delete_model = AsyncMock()
     model_manager.create_dataset = AsyncMock()
-    
+
     yield model_manager
 
 
@@ -226,7 +227,7 @@ async def mock_engine_manager(mock_model_manager, mock_metrics_collector) -> Asy
     engine_manager.train_model = AsyncMock()
     engine_manager.evaluate_model = AsyncMock()
     engine_manager.get_attack_techniques = AsyncMock(return_value=[])
-    
+
     yield engine_manager
 
 
@@ -234,13 +235,13 @@ async def mock_engine_manager(mock_model_manager, mock_metrics_collector) -> Asy
 async def tie_mcp_server(mock_engine_manager, mock_model_manager, mock_db_manager, mock_metrics_collector) -> AsyncGenerator[TIEMCPServer, None]:
     """TIE MCP Server instance for testing"""
     server = TIEMCPServer()
-    
+
     # Replace components with mocks
     server.db_manager = mock_db_manager
     server.metrics_collector = mock_metrics_collector
     server.model_manager = mock_model_manager
     server.engine_manager = mock_engine_manager
-    
+
     yield server
 
 
@@ -282,25 +283,25 @@ def large_dataset(tmp_path) -> Path:
     """Generate a larger dataset for performance testing"""
     reports = []
     techniques = [f"T{1000 + i}" for i in range(100)]  # 100 techniques
-    
+
     for i in range(1000):  # 1000 reports
         # Randomly select 3-10 techniques per report
         import random
         num_techniques = random.randint(3, 10)
         selected_techniques = random.sample(techniques, num_techniques)
-        
+
         report = {
             "id": f"perf_report_{i}",
-            "mitre_techniques": {tech: 1 for tech in selected_techniques},
+            "mitre_techniques": dict.fromkeys(selected_techniques, 1),
             "metadata": {"source": "performance_test"}
         }
         reports.append(report)
-    
+
     dataset = {"reports": reports}
     dataset_file = tmp_path / "large_dataset.json"
     with open(dataset_file, 'w') as f:
         json.dump(dataset, f)
-    
+
     return dataset_file
 
 
@@ -315,15 +316,15 @@ def stress_test_techniques():
 async def real_db_manager(test_settings) -> AsyncGenerator[DatabaseManager, None]:
     """Real database manager for integration tests"""
     db_manager = DatabaseManager()
-    
+
     # Override settings for test database
     original_url = test_settings.database.url
     test_settings.database.url = "sqlite+aiosqlite:///:memory:"
-    
+
     await db_manager.initialize()
     yield db_manager
     await db_manager.cleanup()
-    
+
     # Restore original settings
     test_settings.database.url = original_url
 
@@ -367,7 +368,7 @@ def assert_prediction_response_valid(response: dict):
     assert "predicted_techniques" in response
     assert "input_techniques" in response
     assert "execution_time_seconds" in response
-    
+
     for prediction in response["predicted_techniques"]:
         assert "technique_id" in prediction
         assert "score" in prediction
