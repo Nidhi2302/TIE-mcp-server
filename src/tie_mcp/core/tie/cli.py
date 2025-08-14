@@ -87,13 +87,17 @@ def export_model(dataset_filepath: str, enterprise_attack_filepath: str, outfile
 
     U = tie.get_U().astype("float32")
     V = tie.get_V().astype("float32")
-    assert U.shape == (m, k)
-    assert V.shape == (n, k)
+    if U.shape != (m, k):
+        raise ValueError(f"Expected U shape ({m}, {k}), got {U.shape}")
+    if V.shape != (n, k):
+        raise ValueError(f"Expected V shape ({n}, {k}), got {V.shape}")
 
     report_ids = np.array(training_data.report_ids)
     technique_ids = np.array(training_data.technique_ids)
-    assert report_ids.shape == (m,)
-    assert technique_ids.shape == (n,)
+    if report_ids.shape != (m,):
+        raise ValueError(f"Expected report_ids shape ({m},), got {report_ids.shape}")
+    if technique_ids.shape != (n,):
+        raise ValueError(f"Expected technique_ids shape ({n},), got {technique_ids.shape}")
 
     np.savez_compressed(
         outfile,
