@@ -3,7 +3,6 @@
 Simplified test suite for TIE MCP Server
 """
 
-import json
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
@@ -29,7 +28,7 @@ class TestTIEMCPServer:
         """Test server initialization process"""
         server = TIEMCPServer()
         mock_initialize.return_value = None
-        
+
         # Test that initialize can be called
         await server.initialize()
         mock_initialize.assert_called_once()
@@ -38,19 +37,25 @@ class TestTIEMCPServer:
         """Test that prediction handler exists and has correct structure"""
         server = TIEMCPServer()
         assert hasattr(server, "_handle_predict_techniques")
-        
+
         # Test with mocked engine manager
         server.engine_manager = MagicMock()
         server.engine_manager.predict_techniques = AsyncMock(
             return_value={
                 "input_techniques": ["T1059", "T1055"],
                 "predicted_techniques": [
-                    {"technique_id": "T1003", "technique_name": "OS Credential Dumping", "score": 0.95}
-                ]
+                    {
+                        "technique_id": "T1003",
+                        "technique_name": "OS Credential Dumping",
+                        "score": 0.95,
+                    }
+                ],
             }
         )
-        
-        result = await server._handle_predict_techniques({"techniques": ["T1059", "T1055"]})
+
+        result = await server._handle_predict_techniques(
+            {"techniques": ["T1059", "T1055"]}
+        )
         assert result is not None
         assert isinstance(result, list)
         assert len(result) > 0
@@ -59,13 +64,13 @@ class TestTIEMCPServer:
         """Test model listing handler"""
         server = TIEMCPServer()
         assert hasattr(server, "_handle_list_models")
-        
+
         # Test with mocked model manager
         server.model_manager = MagicMock()
         server.model_manager.list_models = AsyncMock(
             return_value={"models": [{"id": "default", "name": "Default Model"}]}
         )
-        
+
         result = await server._handle_list_models({"include_metrics": False})
         assert result is not None
         assert isinstance(result, list)
@@ -77,7 +82,7 @@ class TestTIEMCPServer:
         server.engine_manager.predict_techniques = AsyncMock(
             side_effect=Exception("Test error")
         )
-        
+
         # Should handle error gracefully
         result = await server._handle_predict_techniques({"techniques": ["T1059"]})
         assert result is not None
