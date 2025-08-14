@@ -14,6 +14,7 @@ class Environment(str, Enum):
     """Environment types"""
 
     DEVELOPMENT = "development"
+    TESTING = "testing"
     STAGING = "staging"
     PRODUCTION = "production"
 
@@ -243,6 +244,10 @@ class Settings(BaseSettings):
     def is_development(self) -> bool:
         """Check if running in development"""
         return self.environment == Environment.DEVELOPMENT
+
+    def is_testing(self) -> bool:
+        """Check if running in testing"""
+        return self.environment == Environment.TESTING
 
     class Config:
         env_file = ".env"
