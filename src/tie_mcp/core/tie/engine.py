@@ -19,8 +19,7 @@ tf.config.run_functions_eagerly(True)
 # Ensure eager execution is enabled (Bandit B101 replacement)
 if not tf.executing_eagerly():  # pragma: no cover
     raise RuntimeError(
-        "TensorFlow eager execution is required for "
-        "TechniqueInferenceEngine"
+        "TensorFlow eager execution is required for TechniqueInferenceEngine"
     )
 
 

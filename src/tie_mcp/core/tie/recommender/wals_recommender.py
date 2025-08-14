@@ -122,9 +122,7 @@ class WalsRecommender(Recommender):
         if p <= 0:
             raise ValueError(f"p must be > 0 (got {p})")
         if k != self.k:
-            raise ValueError(
-                f"Opposing factors k mismatch: expected {self.k}, got {k}"
-            )
+            raise ValueError(f"Opposing factors k mismatch: expected {self.k}, got {k}")
         if p != data.shape[0]:
             raise ValueError(
                 "Data row count mismatch: "

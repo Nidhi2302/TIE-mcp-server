@@ -100,8 +100,7 @@ def precision_at_k(predictions: pd.DataFrame, test_data: pd.DataFrame, k: int) -
         raise ValueError(f"n must be > 0 (got {n})")
     if predictions.shape != (m, n):
         raise ValueError(
-            "predictions shape mismatch: "
-            f"expected {(m, n)}, got {predictions.shape}"
+            f"predictions shape mismatch: expected {(m, n)}, got {predictions.shape}"
         )
     if not (0 < k <= n):
         raise ValueError(f"k out of bounds (k={k}, n={n})")
@@ -143,8 +142,7 @@ def recall_at_k(predictions: pd.DataFrame, test_data: pd.DataFrame, k: int) -> f
         raise ValueError(f"n must be > 0 (got {n})")
     if predictions.shape != (m, n):
         raise ValueError(
-            "predictions shape mismatch: "
-            f"expected {(m, n)}, got {predictions.shape}"
+            f"predictions shape mismatch: expected {(m, n)}, got {predictions.shape}"
         )
     if not (0 < k <= n):
         raise ValueError(f"k out of bounds (k={k}, n={n})")
@@ -194,8 +192,7 @@ def normalized_discounted_cumulative_gain(
         raise ValueError(f"n must be > 0 (got {n})")
     if predictions.shape != (m, n):
         raise ValueError(
-            "predictions shape mismatch: "
-            f"expected {(m, n)}, got {predictions.shape}"
+            f"predictions shape mismatch: expected {(m, n)}, got {predictions.shape}"
         )
     if not (0 < k <= n):
         raise ValueError(f"k out of bounds (k={k}, n={n})")
@@ -204,8 +201,7 @@ def normalized_discounted_cumulative_gain(
     test_set_size = test_data.sum(axis=1).astype("int")
     if test_set_size.shape != (m,):
         raise ValueError(
-            "test_set_size shape mismatch: "
-            f"expected {(m,)}, got {test_set_size.shape}"
+            f"test_set_size shape mismatch: expected {(m,)}, got {test_set_size.shape}"
         )
 
     def max_idcg(test_size, k) -> float:
@@ -269,13 +265,11 @@ def calculate_predicted_matrix(
 
         if U_norm.shape != (U.shape[0], 1):
             raise ValueError(
-                "U_norm shape mismatch: "
-                f"expected {(U.shape[0], 1)}, got {U_norm.shape}"
+                f"U_norm shape mismatch: expected {(U.shape[0], 1)}, got {U_norm.shape}"
             )
         if V_norm.shape != (V.shape[0], 1):
             raise ValueError(
-                "V_norm shape mismatch: "
-                f"expected {(V.shape[0], 1)}, got {V_norm.shape}"
+                f"V_norm shape mismatch: expected {(V.shape[0], 1)}, got {V_norm.shape}"
             )
 
         if np.isnan(U_norm).any():

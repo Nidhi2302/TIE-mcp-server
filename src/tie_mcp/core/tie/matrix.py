@@ -47,8 +47,7 @@ class ReportTechniqueMatrix:
         """Validates the representation invariant; raises ValueError on violation."""
         if len(self._indices) == 0:
             raise ValueError(
-                "ReportTechniqueMatrix must contain at least one "
-                "non-zero entry"
+                "ReportTechniqueMatrix must contain at least one non-zero entry"
             )
         if len(self._values) != len(self._indices):
             raise ValueError(

@@ -143,8 +143,7 @@ class BPRRecommender(Recommender):
         all_i = u_i % n
         if not (all_i < n).all():
             raise ValueError(
-                "Sampled item indices out of range "
-                f"(max {all_i.max()} >= n {n})"
+                f"Sampled item indices out of range (max {all_i.max()} >= n {n})"
             )
 
         non_observations = 1 - data
@@ -254,11 +253,11 @@ class BPRRecommender(Recommender):
 
             if data[u, i] != 1:
                 raise ValueError(
-                    f"Positive sample expectation violated: data[{u},{i}]={data[u,i]}"
+                    f"Positive sample expectation violated: data[{u},{i}]={data[u, i]}"
                 )
             if data[u, j] != 0:
                 raise ValueError(
-                    f"Negative sample expectation violated: data[{u},{j}]={data[u,j]}"
+                    f"Negative sample expectation violated: data[{u},{j}]={data[u, j]}"
                 )
 
             # theta = theta + alpha * (e^(-x) sigma(x) d/dtheta x + lambda theta)
