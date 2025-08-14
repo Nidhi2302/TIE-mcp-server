@@ -1,0 +1,74 @@
+site_name: TIE MCP Server Documentation
+site_description: Documentation for the Technique Inference Engine MCP Server
+site_author: TIE MCP Team
+site_url: https://nidhi2302.github.io/TIE-mcp-server/
+
+repo_name: Nidhi2302/TIE-mcp-server
+repo_url: https://github.com/Nidhi2302/TIE-mcp-server
+
+nav:
+  - Home: index.md
+  - Getting Started: getting-started.md
+  - API Reference: api-reference.md
+  - Examples: examples.md
+  - Contributing: CONTRIBUTING.md
+
+theme:
+  name: material
+  palette:
+    - scheme: default
+      primary: blue
+      accent: blue
+      toggle:
+        icon: material/brightness-7
+        name: Switch to dark mode
+    - scheme: slate
+      primary: blue
+      accent: blue
+      toggle:
+        icon: material/brightness-4
+        name: Switch to light mode
+  features:
+    - navigation.tabs
+    - navigation.sections
+    - navigation.expand
+    - navigation.top
+    - search.highlight
+    - search.share
+    - content.code.copy
+
+plugins:
+  - search
+  - mkdocstrings:
+      handlers:
+        python:
+          options:
+            docstring_style: google
+            show_source: true
+            show_root_heading: true
+
+markdown_extensions:
+  - pymdownx.highlight:
+      anchor_linenums: true
+      line_spans: __span
+      pygments_lang_class: true
+  - pymdownx.inlinehilite
+  - pymdownx.snippets
+  - pymdownx.superfences
+  - admonition
+  - pymdownx.details
+  - pymdownx.tabbed:
+      alternate_style: true
+  - attr_list
+  - md_in_html
+  - tables
+  - toc:
+      permalink: true
+
+docs_dir: docs
+site_dir: site
+
+extra:
+  social:
+    - icon: fontawesome/brands/github
+      link: https://github.com/Nidhi2302/TIE-mcp-server
