@@ -58,7 +58,7 @@ COPY --from=base /app/.venv /app/.venv
 # Copy application code
 COPY src/ ./src/
 COPY data/ ./data/
-COPY notebooks/ ./notebooks/
+COPY examples/ ./examples/
 
 # Create necessary directories
 RUN mkdir -p logs data/models data/datasets data/configs

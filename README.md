@@ -31,6 +31,151 @@ A comprehensive **Model Context Protocol (MCP)** server implementation for the *
 
 The TIE MCP Server provides cybersecurity professionals and researchers with AI-powered predictions of likely MITRE ATT&CK techniques based on observed attack behaviors. Built on the Model Context Protocol, it seamlessly integrates with AI assistants and security tools to enhance threat analysis and incident response capabilities.
 
+## 🔄 How MCP Works - Architecture & Flow
+
+The Model Context Protocol (MCP) enables seamless communication between AI assistants (like Claude) and specialized tools through a standardized protocol. Here's how the TIE MCP Server operates:
+
+### MCP Communication Flow
+
+```mermaid
+graph TB
+    subgraph "Client Side"
+        A[AI Assistant/Claude]
+        B[MCP Client]
+    end
+    
+    subgraph "MCP Server"
+        C[TIE MCP Server]
+        D[Tool Registry]
+        E[Resource Manager]
+        F[Request Handler]
+    end
+    
+    subgraph "Core Components"
+        G[TIE Engine Manager]
+        H[ML Models<br/>WALS/BPR/MF]
+        I[ATT&CK Data Store]
+        J[Prediction Engine]
+    end
+    
+    A -->|User Query| B
+    B -->|JSON-RPC Request| C
+    C --> F
+    F -->|Route Request| D
+    F -->|Access Data| E
+    
+    D -->|predict_techniques| G
+    D -->|get_attack_techniques| I
+    D -->|list_models| H
+    
+    G --> H
+    G --> J
+    J -->|Predictions| G
+    G -->|Response| F
+    
+    I -->|Technique Data| F
+    H -->|Model Info| F
+    
+    F -->|JSON-RPC Response| C
+    C -->|Formatted Result| B
+    B -->|Display to User| A
+    
+    style A fill:#f9f,stroke:#333,stroke-width:4px
+    style C fill:#bbf,stroke:#333,stroke-width:4px
+    style G fill:#bfb,stroke:#333,stroke-width:4px
+```
+
+### Tool Execution Sequence
+
+```mermaid
+sequenceDiagram
+    participant User
+    participant Claude
+    participant MCP_Client
+    participant TIE_Server
+    participant TIE_Engine
+    participant ML_Models
+    
+    User->>Claude: "Predict next techniques after T1059, T1055"
+    Claude->>MCP_Client: Parse request
+    MCP_Client->>TIE_Server: tools/predict_techniques
+    
+    TIE_Server->>TIE_Server: Validate input
+    TIE_Server->>TIE_Engine: Load technique vectors
+    TIE_Engine->>ML_Models: Get model (WALS/BPR)
+    ML_Models->>ML_Models: Compute embeddings
+    
+    ML_Models->>TIE_Engine: Return predictions
+    TIE_Engine->>TIE_Engine: Rank & filter
+    TIE_Engine->>TIE_Server: Formatted results
+    
+    TIE_Server->>MCP_Client: JSON-RPC response
+    MCP_Client->>Claude: Structured data
+    Claude->>User: Natural language response
+    
+    Note over User,ML_Models: Total execution time: <100ms
+```
+
+### MCP Protocol Components
+
+#### 1. **Transport Layer**
+- **STDIO Communication**: Secure inter-process communication via standard input/output
+- **JSON-RPC 2.0**: Structured request/response protocol
+- **Async Processing**: Non-blocking I/O for concurrent requests
+
+#### 2. **Tool System**
+The MCP server exposes specialized tools that can be invoked by the AI assistant:
+
+| Tool | Purpose | Input | Output |
+|------|---------|-------|--------|
+| `predict_techniques` | Predict likely next ATT&CK techniques | Technique IDs, model parameters | Ranked predictions with scores |
+| `get_attack_techniques` | Retrieve ATT&CK technique information | Search terms, filters | Technique details |
+| `list_models` | List available ML models | Include metrics flag | Model inventory with performance |
+
+#### 3. **Resource System**
+Resources provide direct access to server data:
+
+```
+tie://models          → Access trained model information
+tie://datasets        → View available training datasets
+tie://attack/techniques → MITRE ATT&CK framework data
+tie://metrics/system  → Real-time performance metrics
+```
+
+### MCP Request/Response Flow
+
+```mermaid
+flowchart LR
+    subgraph Request
+        A1[Method: tools/predict_techniques]
+        A2[Params: techniques, top_k]
+        A3[ID: unique-request-id]
+    end
+    
+    subgraph Processing
+        B1[Parse & Validate]
+        B2[Execute Tool Logic]
+        B3[Format Response]
+    end
+    
+    subgraph Response
+        C1[Result: predictions]
+        C2[Metadata: timing, model]
+        C3[ID: matching-request-id]
+    end
+    
+    Request --> Processing
+    Processing --> Response
+```
+
+### Key Features of MCP Implementation
+
+1. **Stateless Design**: Each request is independent, ensuring reliability
+2. **Schema Validation**: All inputs/outputs validated against defined schemas
+3. **Error Handling**: Graceful degradation with detailed error messages
+4. **Performance Monitoring**: Built-in metrics for latency and throughput
+5. **Security First**: Input sanitization, rate limiting, and access control
+
 ### Key Features
 
 - **🔮 Intelligent Technique Prediction**: Advanced ML models predict likely next techniques in attack chains
@@ -218,6 +363,48 @@ What techniques are related to "command execution" in the MITRE ATT&CK framework
 List all available trained models with their performance metrics
 ```
 
+## 🏗️ MCP Integration Details
+
+### How Tools Are Executed
+
+When you interact with the TIE MCP Server through an AI assistant, here's what happens behind the scenes:
+
+1. **Request Parsing**: Your natural language query is interpreted by the AI assistant
+2. **Tool Selection**: The assistant identifies which MCP tool to use
+3. **Parameter Extraction**: Required parameters are extracted from your query
+4. **MCP Protocol**: A JSON-RPC request is sent to the TIE server
+5. **Tool Execution**: The server executes the requested tool with provided parameters
+6. **Response Processing**: Results are returned via JSON-RPC
+7. **Natural Language**: The AI assistant formats the response in a user-friendly way
+
+### Example Tool Execution Flow
+
+```mermaid
+graph TD
+    A[User: "What techniques follow T1059?"]
+    B[Claude: Interprets query]
+    C[MCP: predict_techniques tool]
+    D[TIE: Load model WALS]
+    E[TIE: Compute predictions]
+    F[MCP: Return JSON response]
+    G[Claude: Format as text]
+    H[User: Sees predictions]
+    
+    A --> B
+    B --> C
+    C --> D
+    D --> E
+    E --> F
+    F --> G
+    G --> H
+    
+    style A fill:#e1f5fe
+    style H fill:#e1f5fe
+    style C fill:#fff3e0
+    style D fill:#f3e5f5
+    style E fill:#f3e5f5
+```
+
 ## 🛠️ API Documentation
 
 ### Available MCP Tools
@@ -244,6 +431,52 @@ List all available trained models.
 
 **Parameters:**
 - `include_metrics` (optional, default: true): Include performance metrics
+
+### MCP Communication Protocol
+
+The TIE MCP Server implements the standard MCP protocol with the following message types:
+
+#### Request Message Structure
+```json
+{
+  "jsonrpc": "2.0",
+  "method": "tools/predict_techniques",
+  "params": {
+    "techniques": ["T1059", "T1055"],
+    "top_k": 10,
+    "model_id": "default"
+  },
+  "id": "req-001"
+}
+```
+
+#### Response Message Structure
+```json
+{
+  "jsonrpc": "2.0",
+  "result": {
+    "predicted_techniques": [...],
+    "model_used": "wals_v1",
+    "execution_time": 0.087
+  },
+  "id": "req-001"
+}
+```
+
+#### Error Response Structure
+```json
+{
+  "jsonrpc": "2.0",
+  "error": {
+    "code": -32602,
+    "message": "Invalid params",
+    "data": {
+      "details": "technique_id T9999 not found"
+    }
+  },
+  "id": "req-001"
+}
+```
 
 ### Available MCP Resources
 
@@ -281,6 +514,29 @@ ruff check src/ tests/ --fix
 mypy src/
 ```
 
+### MCP Server Lifecycle
+
+```mermaid
+stateDiagram-v2
+    [*] --> Initialize: Start Server
+    Initialize --> LoadModels: Load ML Models
+    LoadModels --> LoadData: Load ATT&CK Data
+    LoadData --> Ready: Server Ready
+    
+    Ready --> ProcessRequest: Receive Request
+    ProcessRequest --> ValidateInput: Validate Parameters
+    
+    ValidateInput --> ExecuteTool: Valid Input
+    ValidateInput --> ReturnError: Invalid Input
+    
+    ExecuteTool --> GenerateResponse: Process Tool
+    GenerateResponse --> Ready: Send Response
+    ReturnError --> Ready: Send Error
+    
+    Ready --> Shutdown: Stop Signal
+    Shutdown --> [*]: Server Stopped
+```
+
 ### Project Structure
 
 ```
@@ -299,7 +555,7 @@ tie-mcp-server/
 │   └── performance/      # Performance tests
 ├── data/                 # Data files (gitignored)
 ├── docker/               # Docker configuration
-├── notebooks/            # Jupyter notebooks
+├── examples/             # Example notebooks
 └── .github/              # GitHub workflows
 ```
 
