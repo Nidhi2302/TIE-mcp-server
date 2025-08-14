@@ -313,6 +313,8 @@ jobs:
       with:
         github_token: ${{ secrets.GITHUB_TOKEN }}
         publish_dir: ./site
+        force_orphan: true
+        enable_jekyll: false
 
   cleanup:
     runs-on: ubuntu-latest
