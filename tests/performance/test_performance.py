@@ -1,12 +1,15 @@
 """
 Performance tests for TIE MCP Server
 """
-
+# Standard library imports
 import asyncio
 import statistics
 import time
+
+# Third-party imports
 import pytest
 
+# Local imports
 from tie_mcp.core.tie.constants import PredictionMethod
 from tie_mcp.core.tie.engine import TechniqueInferenceEngine
 from tie_mcp.core.tie.matrix_builder import ReportTechniqueMatrixBuilder
