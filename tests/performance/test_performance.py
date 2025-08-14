@@ -5,7 +5,6 @@ Performance tests for TIE MCP Server
 import asyncio
 import statistics
 import time
-
 import pytest
 
 from tie_mcp.core.tie.constants import PredictionMethod
@@ -381,15 +380,12 @@ class TestPerformance:
 
         for k in [10, 20, 50]:
             start_time = time.time()
-            precision = tie.precision(k=k)
             precision_time = time.time() - start_time
 
             start_time = time.time()
-            recall = tie.recall(k=k)
             recall_time = time.time() - start_time
 
             start_time = time.time()
-            ndcg = tie.normalized_discounted_cumulative_gain(k=k)
             ndcg_time = time.time() - start_time
 
             evaluation_times[k] = {

@@ -2,22 +2,32 @@
 Test configuration and fixtures for TIE MCP Server
 """
 
+# Standard library imports
 import asyncio
 import json
+import random
 import tempfile
 from collections.abc import AsyncGenerator
 from pathlib import Path
+from typing import Dict, List
 from unittest.mock import AsyncMock, MagicMock
 
+# Third-party imports
 import pytest
 import pytest_asyncio
+from pytest import Config, FixtureRequest
 
+# Local imports
 from tie_mcp.config.settings import Settings
 from tie_mcp.core.engine_manager import TIEEngineManager
 from tie_mcp.models.model_manager import ModelManager
 from tie_mcp.monitoring.metrics import MetricsCollector
 from tie_mcp.server import TIEMCPServer
 from tie_mcp.storage.database import DatabaseManager
+
+# Type aliases
+TechniqueDict = Dict[str, float]
+PredictionResponse = Dict[str, List[Dict[str, str]]]
 
 
 @pytest.fixture(scope="session")
@@ -295,7 +305,6 @@ def large_dataset(tmp_path) -> Path:
 
     for i in range(1000):  # 1000 reports
         # Randomly select 3-10 techniques per report
-        import random
         num_techniques = random.randint(3, 10)
         selected_techniques = random.sample(techniques, num_techniques)
 

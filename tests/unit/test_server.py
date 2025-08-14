@@ -5,7 +5,6 @@ Unit tests for TIE MCP Server
 
 import pytest
 from mcp.types import TextContent
-
 from tie_mcp.server import TIEMCPServer
 
 
