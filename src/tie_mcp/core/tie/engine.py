@@ -16,7 +16,12 @@ from tie.utils import (
 )
 
 tf.config.run_functions_eagerly(True)
-assert tf.executing_eagerly()
+# Ensure eager execution is enabled (Bandit B101 replacement)
+if not tf.executing_eagerly():  # pragma: no cover
+    raise RuntimeError(
+        "TensorFlow eager execution is required for "
+        "TechniqueInferenceEngine"
+    )
 
 
 class TechniqueInferenceEngine:
@@ -73,19 +78,28 @@ class TechniqueInferenceEngine:
         self._checkrep()
 
     def _checkrep(self):
-        """Asserts the rep invariant."""
+        """Validate the representation invariant (replaces assert for Bandit B101)."""
         # - training_data.shape == test_data.shape == validation_data.shape
-        assert (
+        if not (
             self._training_data.shape
             == self._test_data.shape
             == self._validation_data.shape
-        )
+        ):
+            raise ValueError(
+                "Inconsistent shapes among training, test, and validation data "
+                f"{self._training_data.shape=} "
+                f"{self._test_data.shape=} "
+                f"{self._validation_data.shape=}"
+            )
         # - model is not None
-        assert self._model is not None
+        if self._model is None:
+            raise ValueError("Model must not be None")
         # - prediction_method is not None
-        assert self._prediction_method is not None
-        # - len(enterprise_attack_filepath) >= 0
-        assert len(self._enterprise_attack_filepath) >= 0
+        if self._prediction_method is None:
+            raise ValueError("Prediction method must not be None")
+        # - len(enterprise_attack_filepath) >= 0 (always true but keep defensive check)
+        if self._enterprise_attack_filepath is None:
+            raise ValueError("enterprise_attack_filepath must not be None")
 
     def _add_technique_name_to_dataframe(self, data: pd.DataFrame):
         """Adds a technique name column to the dataframe.
@@ -152,7 +166,11 @@ class TechniqueInferenceEngine:
                 yielded is a unique combination of the cartesian product of values over
                 variables.
             """
-            assert len(variables_names) == len(values)
+            if len(variables_names) != len(values):
+                raise ValueError(
+                    "Variable names and values length mismatch: "
+                    f"{len(variables_names)=} {len(values)=}"
+                )
 
             # base case: No variables over which to make product
 

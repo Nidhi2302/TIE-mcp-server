@@ -27,6 +27,11 @@ class TopItemsRecommender(Recommender):
 
     def __init__(self, m, n, k):
         """Initializes a TopItemsRecommender object."""
+        if m <= 0:
+            raise ValueError(f"m must be > 0 (got {m})")
+        if n <= 0:
+            raise ValueError(f"n must be > 0 (got {n})")
+        # k unused but kept for signature consistency with other recommenders
         self._m = m  # entity dimension
         self._n = n  # item dimension
 
@@ -37,16 +42,22 @@ class TopItemsRecommender(Recommender):
         self._checkrep()
 
     def _checkrep(self):
-        """Asserts the rep invariant."""
-        #   - m > 0
-        assert self._m > 0
-        #   - n > 0
-        assert self._n > 0
-        #   - item_frequencies.shape == (n,)
-        assert self._item_frequencies.shape == (self._n,)
-        #   - 0 <= item_frequencies[i] <= n-1 for all 0 <= i < n
-        assert (0 <= self._item_frequencies).all()
-        assert (self._item_frequencies <= self._n - 1).all()
+        """Validates the rep invariant; raises ValueError on violation."""
+        if self._m <= 0:
+            raise ValueError(f"Invalid state: m must be > 0 (got {self._m})")
+        if self._n <= 0:
+            raise ValueError(f"Invalid state: n must be > 0 (got {self._n})")
+        if self._item_frequencies.shape != (self._n,):
+            raise ValueError(
+                "item_frequencies shape mismatch: "
+                f"expected {(self._n,)}, got {self._item_frequencies.shape}"
+            )
+        if not (0 <= self._item_frequencies).all():
+            raise ValueError("Item frequencies contain negative values")
+        if not (self._item_frequencies <= self._n - 1).all():
+            raise ValueError(
+                "Item frequencies contain values greater than allowed upper bound"
+            )
 
     def U(self) -> np.ndarray:
         """Gets U as a factor of the factorization UV^T."""
@@ -71,12 +82,19 @@ class TopItemsRecommender(Recommender):
         Returns:
             A scaled version of item_frequencies.
         """
-        # assert 1d array
-        assert len(item_frequencies.shape) == 1
+        # validate 1d array
+        if len(item_frequencies.shape) != 1:
+            raise ValueError(
+                f"item_frequencies must be 1D (got shape {item_frequencies.shape})"
+            )
 
         scaled_ranks = item_frequencies / (len(item_frequencies) - 1)
 
-        assert scaled_ranks.shape == item_frequencies.shape
+        if scaled_ranks.shape != item_frequencies.shape:
+            raise ValueError(
+                "Scaled ranks shape mismatch: "
+                f"expected {item_frequencies.shape}, got {scaled_ranks.shape}"
+            )
 
         self._checkrep()
         return scaled_ranks
@@ -87,7 +105,11 @@ class TopItemsRecommender(Recommender):
         ).numpy()
 
         technique_frequency = technique_matrix.sum(axis=0)
-        assert technique_frequency.shape == (self._n,)
+        if technique_frequency.shape != (self._n,):
+            raise ValueError(
+                "Technique frequency shape mismatch: "
+                f"expected {(self._n,)}, got {technique_frequency.shape}"
+            )
 
         ranks = technique_frequency.argsort().argsort()
 
@@ -108,7 +130,11 @@ class TopItemsRecommender(Recommender):
         scaled_ranks = self._scale_item_frequency(self._item_frequencies)
         matrix = np.repeat(np.expand_dims(scaled_ranks, axis=1), self._m, axis=1).T
 
-        assert matrix.shape == (self._m, self._n)
+        if matrix.shape != (self._m, self._n):
+            raise RuntimeError(
+                "Prediction matrix shape mismatch: "
+                f"expected {(self._m, self._n)}, got {matrix.shape}"
+            )
 
         self._checkrep()
         return matrix

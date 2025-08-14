@@ -54,20 +54,27 @@ class BPRRecommender(Recommender):
         self._V = new_V
 
     def _checkrep(self):
-        """Asserts the rep invariant."""
-        #   - U.shape[1] == V.shape[1]
-        assert self._U.shape[1] == self._V.shape[1]
-        #   - U and V are 2D
-        assert len(self._U.shape) == 2
-        assert len(self._V.shape) == 2
-        #   - U.shape[0] > 0
-        assert self._U.shape[0] > 0
-        #   - U.shape[1] > 0
-        assert self._U.shape[1] > 0
-        #   - V.shape[0] > 0
-        assert self._V.shape[0] > 0
-        #   - V.shape[1] > 0
-        assert self._V.shape[1] > 0
+        """Validates the rep invariant; raises ValueError on violation."""
+        if self._U.shape[1] != self._V.shape[1]:
+            raise ValueError(
+                f"Embedding dimension mismatch: "
+                f"U.shape[1]={self._U.shape[1]} V.shape[1]={self._V.shape[1]}"
+            )
+        if len(self._U.shape) != 2 or len(self._V.shape) != 2:
+            raise ValueError(
+                f"Embeddings must be 2D (got U.ndim={len(self._U.shape)}, "
+                f"V.ndim={len(self._V.shape)})"
+            )
+        if self._U.shape[0] <= 0 or self._V.shape[0] <= 0:
+            raise ValueError(
+                f"Embedding counts must be > 0 (U.shape[0]={self._U.shape[0]}, "
+                f"V.shape[0]={self._V.shape[0]})"
+            )
+        if self._U.shape[1] <= 0 or self._V.shape[1] <= 0:
+            raise ValueError(
+                f"Embedding dim must be > 0 (U.shape[1]={self._U.shape[1]}, "
+                f"V.shape[1]={self._V.shape[1]})"
+            )
 
     @property
     def U(self) -> np.ndarray:
@@ -97,7 +104,8 @@ class BPRRecommender(Recommender):
             i is an array of item indices with an observation for that user,
             and j is an array of item indices with no observation for that user.
         """
-        assert num_samples > 0
+        if num_samples <= 0:
+            raise ValueError(f"num_samples must be > 0 (got {num_samples})")
 
         m, n = data.shape
 
@@ -105,9 +113,14 @@ class BPRRecommender(Recommender):
 
         # repeat for each of n items
         num_items_per_user = np.sum(data, axis=1).astype(float)
-        assert not np.any(np.isnan(num_items_per_user))
+        if np.any(np.isnan(num_items_per_user)):
+            raise ValueError("num_items_per_user contains NaN values")
         num_items_per_user[num_items_per_user == 0.0] = np.nan
-        assert num_items_per_user.shape == (m,)  # m users
+        if num_items_per_user.shape != (m,):
+            raise ValueError(
+                f"num_items_per_user shape mismatch: "
+                f"expected {(m,)}, got {num_items_per_user.shape}"
+            )
         sample_item_probability = np.nan_to_num(
             data / np.expand_dims(num_items_per_user, axis=1)
         )
@@ -115,7 +128,11 @@ class BPRRecommender(Recommender):
         joint_user_item_probability = (
             np.expand_dims(sample_user_probability, axis=1) * sample_item_probability
         )
-        assert joint_user_item_probability.shape == (m, n)
+        if joint_user_item_probability.shape != (m, n):
+            raise ValueError(
+                "joint_user_item_probability shape mismatch: "
+                f"expected {(m, n)}, got {joint_user_item_probability.shape}"
+            )
 
         flattened_probability = joint_user_item_probability.flatten("C")
         u_i = np.random.choice(
@@ -124,7 +141,11 @@ class BPRRecommender(Recommender):
 
         all_u = u_i // n
         all_i = u_i % n
-        assert (all_i < 611).all()
+        if not (all_i < n).all():
+            raise ValueError(
+                "Sampled item indices out of range "
+                f"(max {all_i.max()} >= n {n})"
+            )
 
         non_observations = 1 - data
 
@@ -150,7 +171,11 @@ class BPRRecommender(Recommender):
             j = u_to_j[u].pop()
             all_j.append(j)
 
-        assert len(all_u) == len(all_j) == len(all_i)
+        if not (len(all_u) == len(all_j) == len(all_i)):
+            raise ValueError(
+                "Sampled arrays length mismatch: "
+                f"|u|={len(all_u)} |i|={len(all_i)} |j|={len(all_j)}"
+            )
 
         return all_u, all_i, all_j
 
@@ -167,11 +192,19 @@ class BPRRecommender(Recommender):
         data = np.nan_to_num(data)
 
         observations_per_user = np.sum(data, axis=1)
-        assert observations_per_user.shape == (m,)
+        if observations_per_user.shape != (m,):
+            raise ValueError(
+                f"observations_per_user shape mismatch: "
+                f"expected {(m,)}, got {observations_per_user.shape}"
+            )
 
         samples_per_user = observations_per_user * (n - observations_per_user)
         sample_user_probability = samples_per_user / np.sum(samples_per_user)
-        assert sample_user_probability.shape == (m,)
+        if sample_user_probability.shape != (m,):
+            raise ValueError(
+                f"sample_user_probability shape mismatch: "
+                f"expected {(m,)}, got {sample_user_probability.shape}"
+            )
 
         return sample_user_probability
 
@@ -219,8 +252,14 @@ class BPRRecommender(Recommender):
             i = all_i[iteration_count]
             j = all_j[iteration_count]
 
-            assert data[u, i] == 1
-            assert data[u, j] == 0
+            if data[u, i] != 1:
+                raise ValueError(
+                    f"Positive sample expectation violated: data[{u},{i}]={data[u,i]}"
+                )
+            if data[u, j] != 0:
+                raise ValueError(
+                    f"Negative sample expectation violated: data[{u},{j}]={data[u,j]}"
+                )
 
             # theta = theta + alpha * (e^(-x) sigma(x) d/dtheta x + lambda theta)
             x_ui = self._predict_for_single_entry(u, i)

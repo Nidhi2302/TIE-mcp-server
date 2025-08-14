@@ -29,9 +29,12 @@ class WalsRecommender(Recommender):
             n: number of items.  Requires n > 0.
             k: embedding dimension.  Requires k > 0.
         """
-        assert m > 0
-        assert n > 0
-        assert k > 0
+        if m <= 0:
+            raise ValueError(f"m must be > 0 (got {m})")
+        if n <= 0:
+            raise ValueError(f"n must be > 0 (got {n})")
+        if k <= 0:
+            raise ValueError(f"k must be > 0 (got {k})")
 
         self._U = np.zeros((m, k))
         self._V = np.zeros((n, k))
@@ -50,11 +53,11 @@ class WalsRecommender(Recommender):
         self._V = new_V
 
     def _checkrep(self):
-        """Asserts the rep invariant."""
-        #   - U is not None
-        assert self._U is not None
-        #   - V is not None
-        assert self._V is not None
+        """Validates the rep invariant; raises ValueError on violation."""
+        if self._U is None:
+            raise ValueError("Invalid state: _U must not be None")
+        if self._V is None:
+            raise ValueError("Invalid state: _V must not be None")
 
     @property
     def m(self) -> int:
@@ -113,15 +116,29 @@ class WalsRecommender(Recommender):
         Returns:
             A qxk array of recomputed factors which minimize error.
         """
-        # assert preconditions
+        # validate preconditions
         p, k = opposing_factors.shape
         q = data.shape[1]
-        assert p > 0
-        assert k == self.k
-        assert p == data.shape[0]
-        assert q > 0
-        assert alpha > 0
-        assert regularization_coefficient >= 0
+        if p <= 0:
+            raise ValueError(f"p must be > 0 (got {p})")
+        if k != self.k:
+            raise ValueError(
+                f"Opposing factors k mismatch: expected {self.k}, got {k}"
+            )
+        if p != data.shape[0]:
+            raise ValueError(
+                "Data row count mismatch: "
+                f"opposing_factors p={p}, data.shape[0]={data.shape[0]}"
+            )
+        if q <= 0:
+            raise ValueError(f"q must be > 0 (got {q})")
+        if alpha <= 0:
+            raise ValueError(f"alpha must be > 0 (got {alpha})")
+        if regularization_coefficient < 0:
+            raise ValueError(
+                "regularization_coefficient must be >= 0 "
+                f"(got {regularization_coefficient})"
+            )
 
         def V_T_C_I_V(V, c_array):
             _, k = V.shape
@@ -135,7 +152,11 @@ class WalsRecommender(Recommender):
                 v_i = np.expand_dims(V[i, :], axis=1)
 
                 square_addition = v_i @ v_i.T
-                assert square_addition.shape == (k, k)
+                if square_addition.shape != (k, k):
+                    raise RuntimeError(
+                        "square_addition shape mismatch: "
+                        f"expected {(k, k)}, got {square_addition.shape}"
+                    )
 
                 product += square_addition
 
@@ -157,7 +178,10 @@ class WalsRecommender(Recommender):
             P_u = data[:, i]
             # C is c if unobserved, one otherwise
             C_u = np.where(P_u > 0, alpha + 1, 1)
-            assert C_u.shape == (p,)
+            if C_u.shape != (p,):
+                raise ValueError(
+                    f"C_u shape mismatch: expected {(p,)}, got {C_u.shape}"
+                )
 
             confidence_scaled_v_transpose_v = V_T_C_I_V(V, C_u)
 
@@ -201,11 +225,15 @@ class WalsRecommender(Recommender):
         self._reset_embeddings()
 
         # preconditions
-        assert 0 < c < 1
+        if not (0 < c < 1):
+            raise ValueError(f"c must satisfy 0 < c < 1 (got {c})")
 
         P: np.ndarray = tf.sparse.to_dense(tf.sparse.reorder(data)).numpy()
 
-        assert P.shape == (self.m, self.n)
+        if P.shape != (self.m, self.n):
+            raise ValueError(
+                f"P shape mismatch: expected {(self.m, self.n)}, got {P.shape}"
+            )
 
         alpha = (1 / c) - 1
 
@@ -289,7 +317,10 @@ class WalsRecommender(Recommender):
             An array of predicted values for the new entity.
         """
         entity = tf.sparse.to_dense(tf.sparse.reorder(entity)).numpy()
-        assert entity.shape == (self.n,)
+        if entity.shape != (self.n,):
+            raise ValueError(
+                f"entity shape mismatch: expected {(self.n,)}, got {entity.shape}"
+            )
 
         alpha = (1 / c) - 1
 
@@ -300,7 +331,11 @@ class WalsRecommender(Recommender):
             regularization_coefficient=regularization_coefficient,
         )
 
-        assert new_entity_factor.shape == (1, self._U.shape[1])
+        if new_entity_factor.shape != (1, self._U.shape[1]):
+            raise ValueError(
+                "new_entity_factor shape mismatch: "
+                f"expected {(1, self._U.shape[1])}, got {new_entity_factor.shape}"
+            )
 
         return np.squeeze(
             calculate_predicted_matrix(new_entity_factor, self._V, method)

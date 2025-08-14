@@ -45,6 +45,13 @@ class FactorizationRecommender(Recommender):
             n: number of items
             k: embedding dimension
         """
+        if m <= 0:
+            raise ValueError(f"m must be > 0 (got {m})")
+        if n <= 0:
+            raise ValueError(f"n must be > 0 (got {n})")
+        if k <= 0:
+            raise ValueError(f"k must be > 0 (got {k})")
+
         self._U = tf.Variable(tf.zeros((m, k)))
         self._V = tf.Variable(tf.zeros((n, k)))
 
@@ -67,26 +74,33 @@ class FactorizationRecommender(Recommender):
         self._V = new_V
 
     def _checkrep(self):
-        """Asserts the rep invariant."""
-        #   - U.shape[1] == V.shape[1]
-        assert self._U.shape[1] == self._V.shape[1]
-        #   - U and V are 2D
-        assert len(self._U.shape) == 2
-        assert len(self._V.shape) == 2
-        #   - U.shape[0] > 0
-        assert self._U.shape[0] > 0
-        #   - U.shape[1] > 0
-        assert self._U.shape[1] > 0
-        #   - V.shape[0] > 0
-        assert self._V.shape[0] > 0
-        #   - V.shape[1] > 0
-        assert self._V.shape[1] > 0
-        #   - all elements of U are non-null
-        assert not tf.math.reduce_any(tf.math.is_nan(self._U))
-        #   - all elements of V are non-null
-        assert not tf.math.reduce_any(tf.math.is_nan(self._V))
-        #   - loss is not None
-        assert self._loss is not None
+        """Validates the rep invariant; raises ValueError on violation."""
+        if self._U.shape[1] != self._V.shape[1]:
+            raise ValueError(
+                f"Embedding dimension mismatch: U.shape[1]={self._U.shape[1]} "
+                f"V.shape[1]={self._V.shape[1]}"
+            )
+        if len(self._U.shape) != 2 or len(self._V.shape) != 2:
+            raise ValueError(
+                f"Embeddings must be 2D (got U.ndim={len(self._U.shape)}, "
+                f"V.ndim={len(self._V.shape)})"
+            )
+        if self._U.shape[0] <= 0 or self._V.shape[0] <= 0:
+            raise ValueError(
+                f"Embedding counts must be > 0 (U.shape[0]={self._U.shape[0]}, "
+                f"V.shape[0]={self._V.shape[0]})"
+            )
+        if self._U.shape[1] <= 0 or self._V.shape[1] <= 0:
+            raise ValueError(
+                f"Embedding dim must be > 0 (U.shape[1]={self._U.shape[1]}, "
+                f"V.shape[1]={self._V.shape[1]})"
+            )
+        if tf.math.reduce_any(tf.math.is_nan(self._U)):
+            raise ValueError("User embedding matrix U contains NaN values")
+        if tf.math.reduce_any(tf.math.is_nan(self._V)):
+            raise ValueError("Item embedding matrix V contains NaN values")
+        if self._loss is None:
+            raise ValueError("Loss function is not initialized")
 
     @property
     def U(self) -> np.ndarray:
@@ -340,7 +354,8 @@ class FactorizationRecommender(Recommender):
             gradients = tape.gradient(loss, [embedding])
             optimizer.apply_gradients(zip(gradients, [embedding], strict=False))
 
-        assert not np.isnan(embedding.numpy()).any()
+        if np.isnan(embedding.numpy()).any():
+            raise ValueError("Embedding contains NaN values after optimization")
         self._checkrep()
         return np.squeeze(
             calculate_predicted_matrix(embedding.numpy().T, self._V.numpy(), method)

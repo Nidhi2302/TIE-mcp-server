@@ -34,9 +34,12 @@ class ImplicitWalsRecommender(Recommender):
             n: number of items.  Requires n > 0.
             k: embedding dimension.  Requires k > 0.
         """
-        assert m > 0
-        assert n > 0
-        assert k > 0
+        if m <= 0:
+            raise ValueError(f"m must be > 0 (got {m})")
+        if n <= 0:
+            raise ValueError(f"n must be > 0 (got {n})")
+        if k <= 0:
+            raise ValueError(f"k must be > 0 (got {k})")
 
         self._m = m
         self._n = n
@@ -49,27 +52,27 @@ class ImplicitWalsRecommender(Recommender):
         self._checkrep()
 
     def _checkrep(self):
-        """Asserts the rep invariant."""
-        #   - m > 0
-        assert self._m > 0
-        #   - n > 0
-        assert self._n > 0
-        #   - k > 0
-        assert self._k > 0
+        """Validates the rep invariant; raises ValueError on violation."""
+        if self._m <= 0:
+            raise ValueError(f"Invalid state: m must be > 0 (got {self._m})")
+        if self._n <= 0:
+            raise ValueError(f"Invalid state: n must be > 0 (got {self._n})")
+        if self._k <= 0:
+            raise ValueError(f"Invalid state: k must be > 0 (got {self._k})")
 
     @property
     def U(self) -> np.ndarray:
         """Gets U as a factor of the factorization UV^T. Model must be trained."""
-        assert self._model
-
+        if self._model is None:
+            raise RuntimeError("Model must be trained before accessing user factors")
         self._checkrep()
         return np.copy(self._model.user_factors)
 
     @property
     def V(self) -> np.ndarray:
         """Gets V as a factor of the factorization UV^T. Model must be trained."""
-        assert self._model
-
+        if self._model is None:
+            raise RuntimeError("Model must be trained before accessing item factors")
         self._checkrep()
         return np.copy(self._model.item_factors)
 
@@ -93,7 +96,8 @@ class ImplicitWalsRecommender(Recommender):
         Mutates:
             The recommender to the new trained state.
         """
-        assert 0 < c < 1
+        if not (0 < c < 1):
+            raise ValueError(f"c must satisfy 0 < c < 1 (got {c})")
 
         alpha = (1 / c) - 1
         self._model = AlternatingLeastSquares(

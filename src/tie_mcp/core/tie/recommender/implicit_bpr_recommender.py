@@ -34,10 +34,13 @@ class ImplicitBPRRecommender:
             n: number of items.  Requires n > 0.
             k: the embedding dimension.  Requires k > 0.
         """
-        # assert preconditions
-        assert k > 0
-        assert n > 0
-        assert k > 0
+        # validate preconditions
+        if m <= 0:
+            raise ValueError(f"m must be > 0 (got {m})")
+        if n <= 0:
+            raise ValueError(f"n must be > 0 (got {n})")
+        if k <= 0:
+            raise ValueError(f"k must be > 0 (got {k})")
 
         self._m = m
         self._n = n
@@ -49,29 +52,31 @@ class ImplicitBPRRecommender:
         self._checkrep()
 
     def _checkrep(self):
-        """Asserts the rep invariant."""
-        #   - m > 0
-        assert self._m > 0
-        #   - n > 0
-        assert self._n > 0
-        #   - k > 0
-        assert self._k > 0
-        #   - num_new_users >= 0
-        assert self._num_new_users >= 0
+        """Validates the representation invariant; raises ValueError on violation."""
+        if self._m <= 0:
+            raise ValueError(f"Invalid state: m must be > 0 (got {self._m})")
+        if self._n <= 0:
+            raise ValueError(f"Invalid state: n must be > 0 (got {self._n})")
+        if self._k <= 0:
+            raise ValueError(f"Invalid state: k must be > 0 (got {self._k})")
+        if self._num_new_users < 0:
+            raise ValueError(
+                f"Invalid state: num_new_users must be >= 0 (got {self._num_new_users})"
+            )
 
     @property
     def U(self) -> np.ndarray:
         """Gets U as a factor of the factorization UV^T. Model must be trained."""
-        assert self._model
-
+        if self._model is None:
+            raise RuntimeError("Model must be trained before accessing user factors")
         self._checkrep()
         return np.copy(self._model.user_factors)
 
     @property
     def V(self) -> np.ndarray:
         """Gets V as a factor of the factorization UV^T. Model must be trained."""
-        assert self._model
-
+        if self._model is None:
+            raise RuntimeError("Model must be trained before accessing item factors")
         self._checkrep()
         return np.copy(self._model.item_factors)
 
@@ -156,8 +161,9 @@ class ImplicitBPRRecommender:
         Returns:
             An mxn array of values.
         """
+        if self._model is None:
+            raise RuntimeError("Model must be trained before calling predict")
         self._checkrep()
-
         return calculate_predicted_matrix(
             self._model.user_factors, self._model.item_factors, method
         )

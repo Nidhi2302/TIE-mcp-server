@@ -44,11 +44,17 @@ class ReportTechniqueMatrix:
         self._checkrep()
 
     def _checkrep(self):
-        """Asserts the rep invariant."""
-        # - len(indices) > 0
-        assert len(self._indices) > 0
-        # - len(values) == len(indices)
-        assert len(self._values) == len(self._indices)
+        """Validates the representation invariant; raises ValueError on violation."""
+        if len(self._indices) == 0:
+            raise ValueError(
+                "ReportTechniqueMatrix must contain at least one "
+                "non-zero entry"
+            )
+        if len(self._values) != len(self._indices):
+            raise ValueError(
+                "Length mismatch: values length "
+                f"{len(self._values)} != indices length {len(self._indices)}"
+            )
 
     @property
     def m(self):
@@ -134,8 +140,12 @@ class ReportTechniqueMatrix:
                 new_indices.append(old_index)
                 new_values.append(old_value)
 
-        assert len(new_indices) == len(indices)
-        assert len(new_values) == len(indices)
+        if len(new_indices) != len(indices) or len(new_values) != len(indices):
+            raise ValueError(
+                "Mask operation length mismatch: expected "
+                f"{len(indices)} entries, got indices={len(new_indices)} "
+                f"values={len(new_values)}"
+            )
 
         self._checkrep()
 
