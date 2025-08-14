@@ -5,6 +5,9 @@ import random
 from tie.matrix import ReportTechniqueMatrix
 from tie.utils import get_mitre_technique_ids_to_names
 
+# Use SystemRandom for sampling to satisfy Bandit B311 (insecure usage of random)
+_secure_random = random.SystemRandom()
+
 
 class ReportTechniqueMatrixBuilder:
     """A builder for report technique matrices."""
@@ -31,11 +34,11 @@ class ReportTechniqueMatrixBuilder:
         self._checkrep()
 
     def _checkrep(self):
-        """Asserts the rep invariant."""
-        #   - len(combined_dataset_filepath) >= 0
-        assert len(self._combined_datset_filepath) >= 0
-        #   - len(enterprise_attack_filepath) >= 0
-        assert len(self._enterprise_attack_filepath) >= 0
+        """Validates the representation invariant; raises ValueError on violation."""
+        if self._combined_datset_filepath is None:
+            raise ValueError("combined_dataset_filepath must not be None")
+        if self._enterprise_attack_filepath is None:
+            raise ValueError("enterprise_attack_filepath must not be None")
 
     def _get_report_techniques(self, filepath: str) -> tuple[frozenset[str]]:
         """Gets a set of all MITRE technique ids present in each report.
@@ -147,16 +150,28 @@ class ReportTechniqueMatrixBuilder:
             A tuple of the form training_data, test_data, validation_data containing
             the training, test, and validation datasets, respectively.
         """
-        assert 0 <= test_ratio <= 1
-        assert 0 <= validation_ratio <= 1
-        assert test_ratio + validation_ratio <= 1
+        if not (0 <= test_ratio <= 1):
+            raise ValueError(f"test_ratio must be in [0,1] (got {test_ratio})")
+        if not (0 <= validation_ratio <= 1):
+            raise ValueError(
+                f"validation_ratio must be in [0,1] (got {validation_ratio})"
+            )
+        if test_ratio + validation_ratio > 1:
+            raise ValueError(
+                "test_ratio + validation_ratio must be <= 1 "
+                f"(got {test_ratio + validation_ratio})"
+            )
 
         data = self.build()
 
         num_observations = data.to_numpy().sum()
         # make sure that we have enough observations
         # to at least provide a single one per report
-        assert data.m <= num_observations * (1 - test_ratio - validation_ratio)
+        if not (data.m <= num_observations * (1 - test_ratio - validation_ratio)):
+            raise ValueError(
+                "Insufficient observations for one training example per report: "
+                f"{data.m=} > {num_observations * (1 - test_ratio - validation_ratio)}"
+            )
         # use floor since we need to have at least one example in the training set for
         # each report may mean slightly less (by 1) items in test or validation set
         num_validation_samples = math.floor(validation_ratio * num_observations)
@@ -178,8 +193,11 @@ class ReportTechniqueMatrixBuilder:
 
         min_training_indices = set()
         for _, indices in indices_by_row.items():
-            minimum_sample_for_row = random.sample(indices, k=1)
-            assert len(minimum_sample_for_row) == 1
+            minimum_sample_for_row = _secure_random.sample(indices, k=1)
+            if len(minimum_sample_for_row) != 1:
+                raise RuntimeError(
+                    "Failed to sample exactly one mandatory training index for a row"
+                )
             min_training_indices.add(minimum_sample_for_row[0])
 
         remaining_indices_to_sample = frozenset(data.indices).difference(
@@ -187,23 +205,30 @@ class ReportTechniqueMatrixBuilder:
         )
 
         sampled_validation_indices = frozenset(
-            random.sample(sorted(remaining_indices_to_sample), k=num_validation_samples)
+            _secure_random.sample(
+                sorted(remaining_indices_to_sample), k=num_validation_samples
+            )
         )
         remaining_indices_to_sample = remaining_indices_to_sample.difference(
             sampled_validation_indices
         )
 
         sampled_test_indices = frozenset(
-            random.sample(sorted(remaining_indices_to_sample), k=num_test_samples)
+            _secure_random.sample(
+                sorted(remaining_indices_to_sample), k=num_test_samples
+            )
         )
 
         sampled_train_indices = frozenset(data.indices).difference(
             sampled_validation_indices, sampled_test_indices
         )
 
-        assert sampled_train_indices.isdisjoint(sampled_test_indices)
-        assert sampled_train_indices.isdisjoint(sampled_validation_indices)
-        assert sampled_test_indices.isdisjoint(sampled_validation_indices)
+        if not sampled_train_indices.isdisjoint(sampled_test_indices):
+            raise ValueError("Train and test index sets are not disjoint")
+        if not sampled_train_indices.isdisjoint(sampled_validation_indices):
+            raise ValueError("Train and validation index sets are not disjoint")
+        if not sampled_test_indices.isdisjoint(sampled_validation_indices):
+            raise ValueError("Test and validation index sets are not disjoint")
 
         training_data = data.mask(sampled_train_indices)
         validation_data = data.mask(sampled_validation_indices)

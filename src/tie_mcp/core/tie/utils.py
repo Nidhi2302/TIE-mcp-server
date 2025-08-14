@@ -23,7 +23,11 @@ def get_mitre_technique_ids_to_names(stix_filepath: str) -> dict[str, str]:
                 external_references,
             )
         )
-        assert len(mitre_references) == 1
+        if len(mitre_references) != 1:
+            raise ValueError(
+                "Expected exactly one mitre-attack external reference; "
+                f"found {len(mitre_references)}"
+            )
         mitre_technique_id = mitre_references[0]["external_id"]
         all_technique_ids[mitre_technique_id] = technique.get("name")
 
@@ -52,10 +56,18 @@ def _get_num_test_items_in_top_k_per_user(
     # if 1 in both, then predicted in top k
     # min to get lowest rank in group, aka less than k
     top_k_predictions = predictions.rank(axis=1, method="max", ascending=False) <= k
-    assert m, 1 == top_k_predictions.shape
+    if top_k_predictions.shape != (m, n):
+        raise ValueError(
+            "top_k_predictions shape mismatch: "
+            f"expected {(m, n)}, got {top_k_predictions.shape}"
+        )
     test_items_in_top_k = (test_data > 0) & top_k_predictions
     num_test_items_in_top_k = test_items_in_top_k.sum(axis=1)
-    assert m, 1 == num_test_items_in_top_k.shape
+    if num_test_items_in_top_k.shape != (m,):
+        raise ValueError(
+            "num_test_items_in_top_k shape mismatch: "
+            f"expected {(m,)}, got {num_test_items_in_top_k.shape}"
+        )
 
     return num_test_items_in_top_k
 
@@ -82,10 +94,17 @@ def precision_at_k(predictions: pd.DataFrame, test_data: pd.DataFrame, k: int) -
         empty.
     """
     m, n = test_data.shape
-    assert m > 0
-    assert n > 0
-    assert m, n == predictions.shape
-    assert 0 < k <= n
+    if m <= 0:
+        raise ValueError(f"m must be > 0 (got {m})")
+    if n <= 0:
+        raise ValueError(f"n must be > 0 (got {n})")
+    if predictions.shape != (m, n):
+        raise ValueError(
+            "predictions shape mismatch: "
+            f"expected {(m, n)}, got {predictions.shape}"
+        )
+    if not (0 < k <= n):
+        raise ValueError(f"k out of bounds (k={k}, n={n})")
 
     num_test_items_in_top_k = _get_num_test_items_in_top_k_per_user(
         predictions, test_data, k
@@ -118,10 +137,17 @@ def recall_at_k(predictions: pd.DataFrame, test_data: pd.DataFrame, k: int) -> f
         empty.
     """
     m, n = test_data.shape
-    assert m > 0
-    assert n > 0
-    assert m, n == predictions.shape
-    assert 0 < k <= n
+    if m <= 0:
+        raise ValueError(f"m must be > 0 (got {m})")
+    if n <= 0:
+        raise ValueError(f"n must be > 0 (got {n})")
+    if predictions.shape != (m, n):
+        raise ValueError(
+            "predictions shape mismatch: "
+            f"expected {(m, n)}, got {predictions.shape}"
+        )
+    if not (0 < k <= n):
+        raise ValueError(f"k out of bounds (k={k}, n={n})")
 
     num_test_items_in_top_k = _get_num_test_items_in_top_k_per_user(
         predictions, test_data, k
@@ -162,14 +188,25 @@ def normalized_discounted_cumulative_gain(
     """
     # assert preconditions
     m, n = test_data.shape
-    assert m > 0
-    assert n > 0
-    assert m, n == predictions.shape
-    assert 0 < k <= n
+    if m <= 0:
+        raise ValueError(f"m must be > 0 (got {m})")
+    if n <= 0:
+        raise ValueError(f"n must be > 0 (got {n})")
+    if predictions.shape != (m, n):
+        raise ValueError(
+            "predictions shape mismatch: "
+            f"expected {(m, n)}, got {predictions.shape}"
+        )
+    if not (0 < k <= n):
+        raise ValueError(f"k out of bounds (k={k}, n={n})")
 
     # calculate idcg
     test_set_size = test_data.sum(axis=1).astype("int")
-    assert m, 1 == test_set_size.shape
+    if test_set_size.shape != (m,):
+        raise ValueError(
+            "test_set_size shape mismatch: "
+            f"expected {(m,)}, got {test_set_size.shape}"
+        )
 
     def max_idcg(test_size, k) -> float:
         return sum(1 / math.log2(i + 1) for i in range(1, min(test_size, k) + 1))
@@ -179,7 +216,11 @@ def normalized_discounted_cumulative_gain(
     idcg = np.mean(np.where(lambda x: x > 0, user_idcg, np.nan))
 
     prediction_ranking = predictions.rank(axis=1, method="first", ascending=False)
-    assert m, 1 == prediction_ranking.shape
+    if prediction_ranking.shape != (m, n):
+        raise ValueError(
+            "prediction_ranking shape mismatch: "
+            f"expected {(m, n)}, got {prediction_ranking.shape}"
+        )
 
     # calculating dcg
     # numerator: 1 if test set is in prediction, 0 otherwise
@@ -191,7 +232,8 @@ def normalized_discounted_cumulative_gain(
 
     dcg = np.divide(numerator, denominator)
     # in test set or rank should never be nan
-    assert not np.any(np.isnan(dcg))
+    if np.any(np.isnan(dcg)):
+        raise ValueError("dcg contains NaN values")
 
     entity_dcg = np.sum(dcg, axis=1)
     # only count for test
@@ -225,11 +267,21 @@ def calculate_predicted_matrix(
         U_norm[U_norm == 0.0] = 1.0
         V_norm[V_norm == 0.0] = 1.0
 
-        assert U_norm.shape == (U.shape[0], 1)
-        assert V_norm.shape == (V.shape[0], 1)
+        if U_norm.shape != (U.shape[0], 1):
+            raise ValueError(
+                "U_norm shape mismatch: "
+                f"expected {(U.shape[0], 1)}, got {U_norm.shape}"
+            )
+        if V_norm.shape != (V.shape[0], 1):
+            raise ValueError(
+                "V_norm shape mismatch: "
+                f"expected {(V.shape[0], 1)}, got {V_norm.shape}"
+            )
 
-        assert not np.isnan(U_norm).any()
-        assert not np.isnan(V_norm).any()
+        if np.isnan(U_norm).any():
+            raise ValueError("U_norm contains NaN values")
+        if np.isnan(V_norm).any():
+            raise ValueError("V_norm contains NaN values")
 
         U_scaled = np.divide(U, U_norm)
         V_scaled = np.divide(V, V_norm)
