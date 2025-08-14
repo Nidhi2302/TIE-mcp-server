@@ -197,7 +197,7 @@ class Settings(BaseSettings):
     log_level: LogLevel = Field(default=LogLevel.INFO)
 
     # Server
-    host: str = Field(default="0.0.0.0")
+    host: str = Field(default="127.0.0.1")  # Default to localhost for security
     port: int = Field(default=8000)
     workers: int = Field(default=1)
     reload: bool = Field(default=True)

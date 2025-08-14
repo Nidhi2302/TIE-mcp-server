@@ -1,0 +1,12 @@
+[bandit]
+# Bandit security linter configuration
+
+# Exclude test directories and development files
+exclude_dirs = tests,notebooks,docker
+
+# Skip specific security checks that are not critical for this project
+skips = B101  # Skip assert_used warnings - they're mostly in utility/test code
+
+# Test IDs to skip (in addition to skips above)
+# B101: assert_used - Use of assert detected
+# B403: import_pickle - Consider security implications of pickle (we've addressed the critical ones)

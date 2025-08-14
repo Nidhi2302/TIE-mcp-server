@@ -5,7 +5,6 @@ File utilities for TIE MCP Server
 import asyncio
 import json
 import logging
-import pickle
 import shutil
 import tempfile
 from collections.abc import Callable
@@ -92,45 +91,14 @@ async def write_json_file(file_path: Path, data: dict, indent: int = 2):
         # Clean up temp file if it exists
         try:
             await aiofiles.os.remove(temp_path)
-        except Exception:
-            pass
+        except Exception as cleanup_error:
+            logger.warning(f"Failed to cleanup temp file {temp_path}: {cleanup_error}")
         raise
 
 
-async def read_pickle_file(file_path: Path) -> Any:
-    """Read a pickle file asynchronously"""
-    try:
-
-        def _read_pickle():
-            with open(file_path, "rb") as f:
-                return pickle.load(f)
-
-        return await safe_file_operation(_read_pickle)
-    except Exception as e:
-        logger.error(f"Error reading pickle file {file_path}: {e}")
-        raise
-
-
-async def write_pickle_file(file_path: Path, data: Any):
-    """Write data to a pickle file asynchronously"""
-    try:
-        # Ensure parent directory exists
-        await ensure_directory(file_path.parent)
-
-        def _write_pickle():
-            # Write to temporary file first
-            temp_path = file_path.with_suffix(file_path.suffix + ".tmp")
-            with open(temp_path, "wb") as f:
-                pickle.dump(data, f)
-            # Atomic rename
-            shutil.move(temp_path, file_path)
-
-        await safe_file_operation(_write_pickle)
-        logger.debug(f"Successfully wrote pickle file: {file_path}")
-
-    except Exception as e:
-        logger.error(f"Error writing pickle file {file_path}: {e}")
-        raise
+# Pickle functions removed for security reasons
+# Use JSON serialization with read_json_file/write_json_file instead
+# For complex objects, implement custom serialization methods
 
 
 async def copy_file(src: Path, dst: Path):
