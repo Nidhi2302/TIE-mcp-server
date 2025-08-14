@@ -311,10 +311,24 @@ jobs:
     - name: Deploy to GitHub Pages
       uses: peaceiris/actions-gh-pages@v4
       with:
-        github_token: ${{ secrets.GITHUB_TOKEN }}
+        # Use GH_TOKEN if available, fallback to GITHUB_TOKEN
+        github_token: ${{ secrets.GH_TOKEN || secrets.GITHUB_TOKEN }}
         publish_dir: ./site
         force_orphan: true
         enable_jekyll: false
+        
+    # Alternative manual deployment method (commented out)
+    # Uncomment this section if you prefer manual git operations
+    # - name: Manual GitHub Pages deployment
+    #   run: |
+    #     cd ./site
+    #     git init
+    #     git config user.name "GitHub Actions"
+    #     git config user.email "actions@github.com"
+    #     git add .
+    #     git commit -m "Deploy documentation to GitHub Pages"
+    #     git remote add origin https://x-access-token:${{ secrets.GH_TOKEN || secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}
+    #     git push origin --force gh-pages
 
   cleanup:
     runs-on: ubuntu-latest

@@ -1,5 +1,27 @@
 # TIE MCP Server
 
+## GitHub Actions Setup (Optional)
+
+For enhanced GitHub Pages deployment, you can optionally set up a Personal Access Token (PAT):
+
+### Creating a GitHub PAT
+1. Go to GitHub Settings → Developer settings → Personal access tokens → Tokens (classic)
+2. Generate a new token with these scopes:
+   - `repo` (Full control of private repositories)
+   - `workflow` (Update GitHub Action workflows)
+3. Copy the generated token
+
+### Adding PAT to Repository
+1. Go to your repository Settings → Secrets and variables → Actions
+2. Click "New repository secret"
+3. Name: `GH_TOKEN`
+4. Value: Paste your PAT
+5. Click "Add secret"
+
+The workflow will automatically use `GH_TOKEN` if available, otherwise fall back to the default `GITHUB_TOKEN`.
+
+---
+
 [![Python](https://img.shields.io/badge/python-3.10%2B-blue)](https://www.python.org/downloads/)
 [![Code style: black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/psf/black)
 
