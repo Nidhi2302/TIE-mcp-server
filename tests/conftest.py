@@ -49,7 +49,7 @@ def test_settings() -> Settings:
             "models_directory": Path(tempfile.mkdtemp()) / "models",
             "datasets_directory": Path(tempfile.mkdtemp()) / "datasets",
             "configs_directory": Path(tempfile.mkdtemp()) / "configs",
-        }
+        },
     )
 
 
@@ -60,32 +60,19 @@ def sample_dataset() -> dict:
         "reports": [
             {
                 "id": "report_1",
-                "mitre_techniques": {
-                    "T1059": 1,
-                    "T1055": 1,
-                    "T1082": 1
-                },
-                "metadata": {"source": "test"}
+                "mitre_techniques": {"T1059": 1, "T1055": 1, "T1082": 1},
+                "metadata": {"source": "test"},
             },
             {
                 "id": "report_2",
-                "mitre_techniques": {
-                    "T1059": 1,
-                    "T1053": 1,
-                    "T1105": 1
-                },
-                "metadata": {"source": "test"}
+                "mitre_techniques": {"T1059": 1, "T1053": 1, "T1105": 1},
+                "metadata": {"source": "test"},
             },
             {
                 "id": "report_3",
-                "mitre_techniques": {
-                    "T1055": 1,
-                    "T1053": 1,
-                    "T1082": 1,
-                    "T1105": 1
-                },
-                "metadata": {"source": "test"}
-            }
+                "mitre_techniques": {"T1055": 1, "T1053": 1, "T1082": 1, "T1105": 1},
+                "metadata": {"source": "test"},
+            },
         ]
     }
 
@@ -101,7 +88,7 @@ def sample_attack_data() -> dict:
                 "external_references": [
                     {"source_name": "mitre-attack", "external_id": "T1059"}
                 ],
-                "name": "Command and Scripting Interpreter"
+                "name": "Command and Scripting Interpreter",
             },
             {
                 "type": "attack-pattern",
@@ -109,7 +96,7 @@ def sample_attack_data() -> dict:
                 "external_references": [
                     {"source_name": "mitre-attack", "external_id": "T1055"}
                 ],
-                "name": "Process Injection"
+                "name": "Process Injection",
             },
             {
                 "type": "attack-pattern",
@@ -117,7 +104,7 @@ def sample_attack_data() -> dict:
                 "external_references": [
                     {"source_name": "mitre-attack", "external_id": "T1082"}
                 ],
-                "name": "System Information Discovery"
+                "name": "System Information Discovery",
             },
             {
                 "type": "attack-pattern",
@@ -125,7 +112,7 @@ def sample_attack_data() -> dict:
                 "external_references": [
                     {"source_name": "mitre-attack", "external_id": "T1053"}
                 ],
-                "name": "Scheduled Task/Job"
+                "name": "Scheduled Task/Job",
             },
             {
                 "type": "attack-pattern",
@@ -133,8 +120,8 @@ def sample_attack_data() -> dict:
                 "external_references": [
                     {"source_name": "mitre-attack", "external_id": "T1105"}
                 ],
-                "name": "Ingress Tool Transfer"
-            }
+                "name": "Ingress Tool Transfer",
+            },
         ]
     }
 
@@ -143,7 +130,7 @@ def sample_attack_data() -> dict:
 def temp_dataset_file(sample_dataset, tmp_path) -> Path:
     """Create temporary dataset file"""
     dataset_file = tmp_path / "test_dataset.json"
-    with open(dataset_file, 'w') as f:
+    with open(dataset_file, "w") as f:
         json.dump(sample_dataset, f)
     return dataset_file
 
@@ -152,7 +139,7 @@ def temp_dataset_file(sample_dataset, tmp_path) -> Path:
 def temp_attack_file(sample_attack_data, tmp_path) -> Path:
     """Create temporary ATT&CK file"""
     attack_file = tmp_path / "test_attack.json"
-    with open(attack_file, 'w') as f:
+    with open(attack_file, "w") as f:
         json.dump(sample_attack_data, f)
     return attack_file
 
@@ -167,15 +154,17 @@ async def mock_db_manager() -> AsyncGenerator[DatabaseManager, None]:
 
     # Mock model operations
     db_manager.save_model = AsyncMock(return_value="test-model-id")
-    db_manager.get_model = AsyncMock(return_value={
-        "id": "test-model-id",
-        "name": "test-model",
-        "model_type": "wals",
-        "status": "trained",
-        "hyperparameters": {"epochs": 25},
-        "metrics": {"ndcg_at_20": 0.75},
-        "artifacts_path": "/test/path"
-    })
+    db_manager.get_model = AsyncMock(
+        return_value={
+            "id": "test-model-id",
+            "name": "test-model",
+            "model_type": "wals",
+            "status": "trained",
+            "hyperparameters": {"epochs": 25},
+            "metrics": {"ndcg_at_20": 0.75},
+            "artifacts_path": "/test/path",
+        }
+    )
     db_manager.list_models = AsyncMock(return_value=[])
     db_manager.delete_model = AsyncMock()
 
@@ -189,11 +178,13 @@ def mock_metrics_collector() -> MetricsCollector:
     collector.record_prediction = AsyncMock()
     collector.record_training = AsyncMock()
     collector.record_error = AsyncMock()
-    collector.get_system_metrics = AsyncMock(return_value={
-        "cpu_usage_percent": 50.0,
-        "memory_usage_percent": 60.0,
-        "total_predictions": 100
-    })
+    collector.get_system_metrics = AsyncMock(
+        return_value={
+            "cpu_usage_percent": 50.0,
+            "memory_usage_percent": 60.0,
+            "total_predictions": 100,
+        }
+    )
     return collector
 
 
@@ -223,19 +214,21 @@ async def mock_engine_manager(
     engine_manager = AsyncMock(spec=TIEEngineManager)
     engine_manager.initialize = AsyncMock()
     engine_manager.cleanup = AsyncMock()
-    engine_manager.predict_techniques = AsyncMock(return_value={
-        "predicted_techniques": [
-            {
-                "technique_id": "T1055",
-                "technique_name": "Process Injection",
-                "score": 0.85,
-                "in_training_data": True
-            }
-        ],
-        "input_techniques": ["T1059"],
-        "model_id": "test-model",
-        "execution_time_seconds": 0.1
-    })
+    engine_manager.predict_techniques = AsyncMock(
+        return_value={
+            "predicted_techniques": [
+                {
+                    "technique_id": "T1055",
+                    "technique_name": "Process Injection",
+                    "score": 0.85,
+                    "in_training_data": True,
+                }
+            ],
+            "input_techniques": ["T1059"],
+            "model_id": "test-model",
+            "execution_time_seconds": 0.1,
+        }
+    )
     engine_manager.train_model = AsyncMock()
     engine_manager.evaluate_model = AsyncMock()
     engine_manager.get_attack_techniques = AsyncMock(return_value=[])
@@ -265,11 +258,7 @@ async def tie_mcp_server(
 @pytest.fixture
 def prediction_request():
     """Sample prediction request"""
-    return {
-        "techniques": ["T1059", "T1082"],
-        "top_k": 5,
-        "prediction_method": "dot"
-    }
+    return {"techniques": ["T1059", "T1082"], "top_k": 5, "prediction_method": "dot"}
 
 
 @pytest.fixture
@@ -279,7 +268,7 @@ def training_request():
         "dataset_path": "/test/dataset.json",
         "model_type": "wals",
         "embedding_dimension": 4,
-        "auto_hyperparameter_tuning": True
+        "auto_hyperparameter_tuning": True,
     }
 
 
@@ -309,13 +298,13 @@ def large_dataset(tmp_path) -> Path:
         report = {
             "id": f"perf_report_{i}",
             "mitre_techniques": dict.fromkeys(selected_techniques, 1),
-            "metadata": {"source": "performance_test"}
+            "metadata": {"source": "performance_test"},
         }
         reports.append(report)
 
     dataset = {"reports": reports}
     dataset_file = tmp_path / "large_dataset.json"
-    with open(dataset_file, 'w') as f:
+    with open(dataset_file, "w") as f:
         json.dump(dataset, f)
 
     return dataset_file
@@ -356,18 +345,10 @@ def cleanup_temp_files():
 # Markers for different test categories
 def pytest_configure(config):
     """Configure pytest markers"""
-    config.addinivalue_line(
-        "markers", "unit: mark test as a unit test"
-    )
-    config.addinivalue_line(
-        "markers", "integration: mark test as an integration test"
-    )
-    config.addinivalue_line(
-        "markers", "performance: mark test as a performance test"
-    )
-    config.addinivalue_line(
-        "markers", "slow: mark test as slow running"
-    )
+    config.addinivalue_line("markers", "unit: mark test as a unit test")
+    config.addinivalue_line("markers", "integration: mark test as an integration test")
+    config.addinivalue_line("markers", "performance: mark test as a performance test")
+    config.addinivalue_line("markers", "slow: mark test as slow running")
 
 
 # Custom assertions

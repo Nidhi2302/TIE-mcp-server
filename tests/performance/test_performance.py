@@ -1,6 +1,7 @@
 """
 Performance tests for TIE MCP Server
 """
+
 # Standard library imports
 import asyncio
 import statistics
@@ -29,7 +30,7 @@ class TestPerformance:
         # Build model for testing
         data_builder = ReportTechniqueMatrixBuilder(
             combined_dataset_filepath=str(large_dataset),
-            enterprise_attack_filepath=str(temp_attack_file)
+            enterprise_attack_filepath=str(temp_attack_file),
         )
 
         training_data, test_data, validation_data = (
@@ -44,7 +45,7 @@ class TestPerformance:
             test_data=test_data,
             model=model,
             prediction_method=PredictionMethod.DOT,
-            enterprise_attack_filepath=str(temp_attack_file)
+            enterprise_attack_filepath=str(temp_attack_file),
         )
 
         # Quick training for performance testing
@@ -52,9 +53,7 @@ class TestPerformance:
 
         # Test single prediction latency
         start_time = time.time()
-        predictions = tie.predict_for_new_report(
-            frozenset(stress_test_techniques[:5])
-        )
+        predictions = tie.predict_for_new_report(frozenset(stress_test_techniques[:5]))
         single_prediction_time = time.time() - start_time
 
         assert single_prediction_time < 2.0, (
@@ -94,7 +93,7 @@ class TestPerformance:
         # Setup model (reuse from previous test)
         data_builder = ReportTechniqueMatrixBuilder(
             combined_dataset_filepath=str(large_dataset),
-            enterprise_attack_filepath=str(temp_attack_file)
+            enterprise_attack_filepath=str(temp_attack_file),
         )
 
         training_data, test_data, validation_data = (
@@ -108,7 +107,7 @@ class TestPerformance:
             test_data=test_data,
             model=model,
             prediction_method=PredictionMethod.DOT,
-            enterprise_attack_filepath=str(temp_attack_file)
+            enterprise_attack_filepath=str(temp_attack_file),
         )
 
         tie.fit(epochs=5, c=0.01, regularization_coefficient=0.001)
@@ -124,9 +123,7 @@ class TestPerformance:
         for concurrency in [1, 5, 10, 20]:
             tasks = []
             for i in range(concurrency):
-                techniques_subset = stress_test_techniques[
-                    i % 10 : (i % 10) + 3
-                ]
+                techniques_subset = stress_test_techniques[i % 10 : (i % 10) + 3]
                 tasks.append(make_prediction(techniques_subset))
 
             start_time = time.time()
@@ -141,9 +138,7 @@ class TestPerformance:
             print(f"  Total time: {total_time:.3f}s")
             print(f"  Average prediction time: {avg_duration:.3f}s")
             print(f"  Max prediction time: {max_duration:.3f}s")
-            print(
-                f"  Throughput: {concurrency/total_time:.1f} predictions/sec"
-            )
+            print(f"  Throughput: {concurrency / total_time:.1f} predictions/sec")
 
             # Performance assertions
             assert avg_duration < 2.0, (
@@ -168,7 +163,7 @@ class TestPerformance:
         # Build and train model
         data_builder = ReportTechniqueMatrixBuilder(
             combined_dataset_filepath=str(large_dataset),
-            enterprise_attack_filepath=str(temp_attack_file)
+            enterprise_attack_filepath=str(temp_attack_file),
         )
 
         training_data, test_data, validation_data = (
@@ -184,7 +179,7 @@ class TestPerformance:
             test_data=test_data,
             model=model,
             prediction_method=PredictionMethod.DOT,
-            enterprise_attack_filepath=str(temp_attack_file)
+            enterprise_attack_filepath=str(temp_attack_file),
         )
 
         after_setup_memory = process.memory_info().rss / 1024 / 1024
@@ -196,7 +191,7 @@ class TestPerformance:
 
         # Make predictions
         for i in range(100):
-            techniques = [f"T{1000 + (i % 50)}", f"T{1000 + ((i+1) % 50)}"]
+            techniques = [f"T{1000 + (i % 50)}", f"T{1000 + ((i + 1) % 50)}"]
             tie.predict_for_new_report(frozenset(techniques))
 
         after_predictions_memory = process.memory_info().rss / 1024 / 1024
@@ -232,7 +227,7 @@ class TestPerformance:
         for embedding_dim in [2, 4, 8]:
             data_builder = ReportTechniqueMatrixBuilder(
                 combined_dataset_filepath=str(large_dataset),
-                enterprise_attack_filepath=str(temp_attack_file)
+                enterprise_attack_filepath=str(temp_attack_file),
             )
 
             training_data, test_data, validation_data = (
@@ -248,7 +243,7 @@ class TestPerformance:
                 test_data=test_data,
                 model=model,
                 prediction_method=PredictionMethod.DOT,
-                enterprise_attack_filepath=str(temp_attack_file)
+                enterprise_attack_filepath=str(temp_attack_file),
             )
 
             # Time the training
@@ -287,21 +282,18 @@ class TestPerformance:
 
             for i in range(num_reports):
                 import random
-                selected_techniques = random.sample(
-                    techniques, random.randint(3, 8)
-                )
+
+                selected_techniques = random.sample(techniques, random.randint(3, 8))
                 report = {
                     "id": f"perf_report_{i}",
-                    "mitre_techniques": dict.fromkeys(
-                        selected_techniques, 1
-                    ),
-                    "metadata": {"source": "performance_test"}
+                    "mitre_techniques": dict.fromkeys(selected_techniques, 1),
+                    "metadata": {"source": "performance_test"},
                 }
                 reports.append(report)
 
             dataset = {"reports": reports}
             dataset_file = tmp_path / f"dataset_{num_reports}.json"
-            with open(dataset_file, 'w') as f:
+            with open(dataset_file, "w") as f:
                 json.dump(dataset, f)
 
             # Time the full pipeline
@@ -309,23 +301,21 @@ class TestPerformance:
 
             data_builder = ReportTechniqueMatrixBuilder(
                 combined_dataset_filepath=str(dataset_file),
-                enterprise_attack_filepath=str(temp_attack_file)
+                enterprise_attack_filepath=str(temp_attack_file),
             )
 
             training_data, test_data, validation_data = (
                 data_builder.build_train_test_validation(0.2, 0.1)
             )
 
-            model = WalsRecommender(
-                m=training_data.m, n=training_data.n, k=4
-            )
+            model = WalsRecommender(m=training_data.m, n=training_data.n, k=4)
             tie = TechniqueInferenceEngine(
                 training_data=training_data,
                 validation_data=validation_data,
                 test_data=test_data,
                 model=model,
                 prediction_method=PredictionMethod.DOT,
-                enterprise_attack_filepath=str(temp_attack_file)
+                enterprise_attack_filepath=str(temp_attack_file),
             )
 
             tie.fit(epochs=5, c=0.01, regularization_coefficient=0.001)
@@ -338,9 +328,7 @@ class TestPerformance:
             # Performance scaling assertion
             if num_reports > 100:
                 # Should scale roughly linearly (with some overhead)
-                expected_max_time = (
-                    performance_results[100] * (num_reports / 100) * 1.5
-                )
+                expected_max_time = performance_results[100] * (num_reports / 100) * 1.5
                 assert total_time < expected_max_time, (
                     f"Performance doesn't scale well for {num_reports} reports"
                 )
@@ -357,23 +345,21 @@ class TestPerformance:
 
         data_builder = ReportTechniqueMatrixBuilder(
             combined_dataset_filepath=str(large_dataset),
-            enterprise_attack_filepath=str(temp_attack_file)
+            enterprise_attack_filepath=str(temp_attack_file),
         )
 
         training_data, test_data, validation_data = (
             data_builder.build_train_test_validation(0.2, 0.1)
         )
 
-        model = WalsRecommender(
-            m=training_data.m, n=training_data.n, k=4
-        )
+        model = WalsRecommender(m=training_data.m, n=training_data.n, k=4)
         tie = TechniqueInferenceEngine(
             training_data=training_data,
             validation_data=validation_data,
             test_data=test_data,
             model=model,
             prediction_method=PredictionMethod.DOT,
-            enterprise_attack_filepath=str(temp_attack_file)
+            enterprise_attack_filepath=str(temp_attack_file),
         )
 
         tie.fit(epochs=5, c=0.01, regularization_coefficient=0.001)
@@ -392,21 +378,17 @@ class TestPerformance:
             ndcg_time = time.time() - start_time
 
             evaluation_times[k] = {
-                'precision': precision_time,
-                'recall': recall_time,
-                'ndcg': ndcg_time
+                "precision": precision_time,
+                "recall": recall_time,
+                "ndcg": ndcg_time,
             }
 
             # Performance assertions
             assert precision_time < 5.0, (
                 f"Precision@{k} calculation took {precision_time:.2f}s"
             )
-            assert recall_time < 5.0, (
-                f"Recall@{k} calculation took {recall_time:.2f}s"
-            )
-            assert ndcg_time < 10.0, (
-                f"NDCG@{k} calculation took {ndcg_time:.2f}s"
-            )
+            assert recall_time < 5.0, f"Recall@{k} calculation took {recall_time:.2f}s"
+            assert ndcg_time < 10.0, f"NDCG@{k} calculation took {ndcg_time:.2f}s"
 
             print(
                 f"K={k}: Precision={precision_time:.3f}s, "

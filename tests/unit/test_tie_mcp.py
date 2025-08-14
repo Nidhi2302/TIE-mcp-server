@@ -35,7 +35,7 @@ class TestTIEMCPServer:
             "predict_techniques",
             "train_model",
             "list_models",
-            "get_attack_techniques"
+            "get_attack_techniques",
         ]
         for tool_name in expected_tools:
             assert tool_name in tool_names
@@ -50,7 +50,7 @@ class TestTIEMCPServer:
             "models://",
             "datasets://",
             "attack://techniques",
-            "metrics://system"
+            "metrics://system",
         ]
         for resource_uri in expected_resources:
             assert resource_uri in resource_uris
@@ -58,10 +58,7 @@ class TestTIEMCPServer:
     async def test_technique_prediction(self, client):
         """Test the technique prediction functionality"""
         result = await client.call_tool(
-            "predict_techniques",
-            {
-                "techniques": ["T1059", "T1055"]
-            }
+            "predict_techniques", {"techniques": ["T1059", "T1055"]}
         )
         assert len(result) > 0
 

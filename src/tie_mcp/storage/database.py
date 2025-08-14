@@ -20,11 +20,13 @@ logger = get_logger(__name__)
 
 class Base(DeclarativeBase):
     """Base class for all database models"""
+
     pass
 
 
 class Model(Base):
     """Database model for storing TIE models"""
+
     __tablename__ = "models"
 
     id: Mapped[str] = mapped_column(
@@ -47,21 +49,20 @@ class Model(Base):
         DateTime(timezone=True), server_default=func.now()
     )
     updated_at: Mapped[datetime] = mapped_column(
-        DateTime(timezone=True),
-        server_default=func.now(),
-        onupdate=func.now()
+        DateTime(timezone=True), server_default=func.now(), onupdate=func.now()
     )
 
     __table_args__ = (
-        Index('idx_models_status', 'status'),
-        Index('idx_models_model_type', 'model_type'),
-        Index('idx_models_created_at', 'created_at'),
-        Index('idx_models_is_default', 'is_default'),
+        Index("idx_models_status", "status"),
+        Index("idx_models_model_type", "model_type"),
+        Index("idx_models_created_at", "created_at"),
+        Index("idx_models_is_default", "is_default"),
     )
 
 
 class Dataset(Base):
     """Database model for storing dataset information"""
+
     __tablename__ = "datasets"
 
     id: Mapped[str] = mapped_column(
@@ -77,19 +78,18 @@ class Dataset(Base):
         DateTime(timezone=True), server_default=func.now()
     )
     updated_at: Mapped[datetime] = mapped_column(
-        DateTime(timezone=True),
-        server_default=func.now(),
-        onupdate=func.now()
+        DateTime(timezone=True), server_default=func.now(), onupdate=func.now()
     )
 
     __table_args__ = (
-        Index('idx_datasets_name', 'name'),
-        Index('idx_datasets_created_at', 'created_at'),
+        Index("idx_datasets_name", "name"),
+        Index("idx_datasets_created_at", "created_at"),
     )
 
 
 class PredictionLog(Base):
     """Database model for logging predictions"""
+
     __tablename__ = "prediction_logs"
 
     id: Mapped[str] = mapped_column(
@@ -109,14 +109,15 @@ class PredictionLog(Base):
     )
 
     __table_args__ = (
-        Index('idx_prediction_logs_model_id', 'model_id'),
-        Index('idx_prediction_logs_created_at', 'created_at'),
-        Index('idx_prediction_logs_user_id', 'user_id'),
+        Index("idx_prediction_logs_model_id", "model_id"),
+        Index("idx_prediction_logs_created_at", "created_at"),
+        Index("idx_prediction_logs_user_id", "user_id"),
     )
 
 
 class TrainingLog(Base):
     """Database model for logging training jobs"""
+
     __tablename__ = "training_logs"
 
     id: Mapped[str] = mapped_column(
@@ -143,15 +144,16 @@ class TrainingLog(Base):
     )
 
     __table_args__ = (
-        Index('idx_training_logs_model_id', 'model_id'),
-        Index('idx_training_logs_status', 'status'),
-        Index('idx_training_logs_started_at', 'started_at'),
-        Index('idx_training_logs_user_id', 'user_id'),
+        Index("idx_training_logs_model_id", "model_id"),
+        Index("idx_training_logs_status", "status"),
+        Index("idx_training_logs_started_at", "started_at"),
+        Index("idx_training_logs_user_id", "user_id"),
     )
 
 
 class AuditLog(Base):
     """Database model for audit logging"""
+
     __tablename__ = "audit_logs"
 
     id: Mapped[str] = mapped_column(
@@ -169,11 +171,11 @@ class AuditLog(Base):
     )
 
     __table_args__ = (
-        Index('idx_audit_logs_event_type', 'event_type'),
-        Index('idx_audit_logs_component', 'component'),
-        Index('idx_audit_logs_resource_type', 'resource_type'),
-        Index('idx_audit_logs_user_id', 'user_id'),
-        Index('idx_audit_logs_created_at', 'created_at'),
+        Index("idx_audit_logs_event_type", "event_type"),
+        Index("idx_audit_logs_component", "component"),
+        Index("idx_audit_logs_resource_type", "resource_type"),
+        Index("idx_audit_logs_user_id", "user_id"),
+        Index("idx_audit_logs_created_at", "created_at"),
     )
 
 
@@ -205,9 +207,7 @@ class DatabaseManager:
 
             # Create session maker
             self.async_session_maker = async_sessionmaker(
-                bind=self.engine,
-                class_=AsyncSession,
-                expire_on_commit=False
+                bind=self.engine, class_=AsyncSession, expire_on_commit=False
             )
 
             # Create tables
@@ -270,9 +270,7 @@ class DatabaseManager:
 
         except Exception as e:
             logger.error(
-                "Error getting model from database",
-                model_id=model_id,
-                error=str(e)
+                "Error getting model from database", model_id=model_id, error=str(e)
             )
             raise
 
@@ -307,9 +305,7 @@ class DatabaseManager:
 
         except Exception as e:
             logger.error(
-                "Error updating model in database",
-                model_id=model_id,
-                error=str(e)
+                "Error updating model in database", model_id=model_id, error=str(e)
             )
             raise
 
@@ -327,9 +323,7 @@ class DatabaseManager:
 
         except Exception as e:
             logger.error(
-                "Error deleting model from database",
-                model_id=model_id,
-                error=str(e)
+                "Error deleting model from database", model_id=model_id, error=str(e)
             )
             raise
 
@@ -338,9 +332,9 @@ class DatabaseManager:
         try:
             async with self.get_session() as session:
                 # Unset current default
-                current_default = await session.query(Model).filter(
-                    Model.is_default
-                ).first()
+                current_default = (
+                    await session.query(Model).filter(Model.is_default).first()
+                )
                 if current_default:
                     current_default.is_default = False
 
@@ -449,7 +443,7 @@ class DatabaseManager:
             "version": model.version,
             "is_default": model.is_default,
             "created_at": model.created_at,
-            "updated_at": model.updated_at
+            "updated_at": model.updated_at,
         }
 
     def _dataset_to_dict(self, dataset: Dataset) -> dict[str, Any]:
@@ -463,7 +457,7 @@ class DatabaseManager:
             "num_techniques": dataset.num_techniques,
             "metadata": dataset.metadata,
             "created_at": dataset.created_at,
-            "updated_at": dataset.updated_at
+            "updated_at": dataset.updated_at,
         }
 
     async def health_check(self) -> bool:

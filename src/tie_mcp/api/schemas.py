@@ -11,6 +11,7 @@ from pydantic import BaseModel, Field, validator
 
 class ModelType(str, Enum):
     """Supported model types"""
+
     WALS = "wals"
     BPR = "bpr"
     IMPLICIT_WALS = "implicit_wals"
@@ -21,12 +22,14 @@ class ModelType(str, Enum):
 
 class PredictionMethod(str, Enum):
     """Prediction methods"""
+
     DOT = "dot"
     COSINE = "cosine"
 
 
 class ModelStatus(str, Enum):
     """Model status"""
+
     TRAINING = "training"
     TRAINED = "trained"
     FAILED = "failed"
@@ -36,6 +39,7 @@ class ModelStatus(str, Enum):
 # Request schemas
 class PredictionRequest(BaseModel):
     """Request for technique prediction"""
+
     techniques: list[str] = Field(..., description="List of observed technique IDs")
     model_id: str | None = Field(None, description="Optional model ID to use")
     top_k: int = Field(20, ge=1, le=100, description="Number of top predictions")
@@ -50,6 +54,7 @@ class PredictionRequest(BaseModel):
 
 class TrainingRequest(BaseModel):
     """Request for model training"""
+
     dataset_path: str = Field(..., description="Path to training dataset")
     model_type: ModelType = Field(ModelType.WALS)
     hyperparameters: dict[str, Any] = Field(default_factory=dict)
@@ -70,6 +75,7 @@ class TrainingRequest(BaseModel):
 
 class DatasetCreationRequest(BaseModel):
     """Request for dataset creation"""
+
     reports: list[dict[str, Any]] = Field(..., description="List of CTI reports")
     dataset_name: str = Field(..., description="Name for the dataset")
     description: str = Field("", description="Dataset description")
@@ -93,6 +99,7 @@ class DatasetCreationRequest(BaseModel):
 # Response schemas
 class PredictedTechnique(BaseModel):
     """Single predicted technique"""
+
     technique_id: str
     technique_name: str
     score: float
@@ -101,6 +108,7 @@ class PredictedTechnique(BaseModel):
 
 class PredictionResponse(BaseModel):
     """Response for technique prediction"""
+
     predicted_techniques: list[PredictedTechnique]
     input_techniques: list[str]
     model_id: str
@@ -111,6 +119,7 @@ class PredictionResponse(BaseModel):
 
 class ModelMetrics(BaseModel):
     """Model performance metrics"""
+
     precision_at_10: float | None = None
     precision_at_20: float | None = None
     precision_at_50: float | None = None
@@ -124,6 +133,7 @@ class ModelMetrics(BaseModel):
 
 class DatasetInfo(BaseModel):
     """Dataset information"""
+
     training_samples: int
     validation_samples: int
     test_samples: int
@@ -132,6 +142,7 @@ class DatasetInfo(BaseModel):
 
 class TrainingResponse(BaseModel):
     """Response for model training"""
+
     model_id: str
     model_type: ModelType
     hyperparameters: dict[str, Any]
@@ -143,6 +154,7 @@ class TrainingResponse(BaseModel):
 
 class ModelInfo(BaseModel):
     """Model information"""
+
     id: str
     name: str | None
     model_type: ModelType
@@ -160,6 +172,7 @@ class ModelInfo(BaseModel):
 
 class ModelEvaluationResponse(BaseModel):
     """Response for model evaluation"""
+
     model_id: str
     metrics: dict[str, float]
     k_values: list[int]
@@ -168,6 +181,7 @@ class ModelEvaluationResponse(BaseModel):
 
 class AttackTechniqueInfo(BaseModel):
     """ATT&CK technique information"""
+
     technique_id: str
     technique_name: str
     tactic: str | None = None
@@ -178,6 +192,7 @@ class AttackTechniqueInfo(BaseModel):
 
 class DatasetCreationResponse(BaseModel):
     """Response for dataset creation"""
+
     dataset_id: str
     dataset_name: str
     description: str
@@ -189,6 +204,7 @@ class DatasetCreationResponse(BaseModel):
 
 class ModelListResponse(BaseModel):
     """Response for listing models"""
+
     models: list[ModelInfo]
     total_count: int
     default_model_id: str | None = None
@@ -196,12 +212,14 @@ class ModelListResponse(BaseModel):
 
 class DatasetListResponse(BaseModel):
     """Response for listing datasets"""
+
     datasets: list[DatasetCreationResponse]
     total_count: int
 
 
 class SystemMetrics(BaseModel):
     """System performance metrics"""
+
     cpu_usage_percent: float
     memory_usage_percent: float
     disk_usage_percent: float
@@ -216,6 +234,7 @@ class SystemMetrics(BaseModel):
 
 class HealthCheckResponse(BaseModel):
     """Health check response"""
+
     status: str
     version: str
     timestamp: datetime = Field(default_factory=datetime.utcnow)
@@ -225,6 +244,7 @@ class HealthCheckResponse(BaseModel):
 
 class ErrorResponse(BaseModel):
     """Error response"""
+
     error: str
     detail: str | None = None
     error_code: str | None = None
@@ -234,6 +254,7 @@ class ErrorResponse(BaseModel):
 # Task-related schemas for async operations
 class TaskStatus(str, Enum):
     """Task status"""
+
     PENDING = "pending"
     RUNNING = "running"
     SUCCESS = "success"
@@ -243,6 +264,7 @@ class TaskStatus(str, Enum):
 
 class TaskInfo(BaseModel):
     """Task information"""
+
     task_id: str
     status: TaskStatus
     progress: float = Field(0.0, ge=0.0, le=100.0)
@@ -255,6 +277,7 @@ class TaskInfo(BaseModel):
 
 class TaskResponse(BaseModel):
     """Response for async task submission"""
+
     task_id: str
     status: TaskStatus
     message: str
@@ -264,6 +287,7 @@ class TaskResponse(BaseModel):
 # Batch operation schemas
 class BatchPredictionRequest(BaseModel):
     """Request for batch prediction"""
+
     prediction_requests: list[PredictionRequest]
     model_id: str | None = None
 
@@ -276,6 +300,7 @@ class BatchPredictionRequest(BaseModel):
 
 class BatchPredictionResponse(BaseModel):
     """Response for batch prediction"""
+
     results: list[PredictionResponse]
     total_requests: int
     successful_requests: int
@@ -287,6 +312,7 @@ class BatchPredictionResponse(BaseModel):
 # Configuration schemas
 class ModelConfig(BaseModel):
     """Model configuration"""
+
     model_type: ModelType
     hyperparameters: dict[str, Any]
     embedding_dimension: int = 4
@@ -295,6 +321,7 @@ class ModelConfig(BaseModel):
 
 class TrainingConfig(BaseModel):
     """Training configuration"""
+
     validation_ratio: float = 0.1
     test_ratio: float = 0.2
     auto_hyperparameter_tuning: bool = True

@@ -2,7 +2,6 @@
 Unit tests for TIE MCP Server
 """
 
-
 import pytest
 from mcp.types import TextContent
 from tie_mcp.server import TIEMCPServer
@@ -20,14 +19,10 @@ class TestTIEMCPServer:
         assert server.engine_manager is None
         assert server.model_manager is None
 
-    async def test_predict_techniques_tool(
-        self, tie_mcp_server, prediction_request
-    ):
+    async def test_predict_techniques_tool(self, tie_mcp_server, prediction_request):
         """Test predict_techniques tool handler"""
         # Test the tool handler directly
-        result = await tie_mcp_server._handle_predict_techniques(
-            prediction_request
-        )
+        result = await tie_mcp_server._handle_predict_techniques(prediction_request)
 
         assert isinstance(result, list)
         assert len(result) > 0
@@ -49,9 +44,7 @@ class TestTIEMCPServer:
 
     async def test_list_models_tool(self, tie_mcp_server):
         """Test list_models tool handler"""
-        result = await tie_mcp_server._handle_list_models(
-            {"include_metrics": True}
-        )
+        result = await tie_mcp_server._handle_list_models({"include_metrics": True})
 
         assert isinstance(result, list)
         assert len(result) > 0
@@ -62,9 +55,7 @@ class TestTIEMCPServer:
 
     async def test_get_model_info_tool(self, tie_mcp_server):
         """Test get_model_info tool handler"""
-        result = await tie_mcp_server._handle_get_model_info(
-            {"model_id": "test-model"}
-        )
+        result = await tie_mcp_server._handle_get_model_info({"model_id": "test-model"})
 
         assert isinstance(result, list)
         assert len(result) > 0
@@ -82,11 +73,11 @@ class TestTIEMCPServer:
                 {
                     "id": "test_report",
                     "techniques": ["T1059", "T1055"],
-                    "metadata": {"source": "test"}
+                    "metadata": {"source": "test"},
                 }
             ],
             "dataset_name": "test_dataset",
-            "description": "Test dataset"
+            "description": "Test dataset",
         }
 
         result = await tie_mcp_server._handle_create_dataset(dataset_request)
@@ -100,9 +91,9 @@ class TestTIEMCPServer:
 
     async def test_get_attack_techniques_tool(self, tie_mcp_server):
         """Test get_attack_techniques tool handler"""
-        result = await tie_mcp_server._handle_get_attack_techniques({
-            "technique_ids": ["T1059", "T1055"]
-        })
+        result = await tie_mcp_server._handle_get_attack_techniques(
+            {"technique_ids": ["T1059", "T1055"]}
+        )
 
         assert isinstance(result, list)
         assert len(result) > 0
@@ -114,8 +105,8 @@ class TestTIEMCPServer:
     async def test_error_handling(self, tie_mcp_server):
         """Test error handling in tool handlers"""
         # Make engine manager raise an exception
-        tie_mcp_server.engine_manager.predict_techniques.side_effect = (
-            Exception("Test error")
+        tie_mcp_server.engine_manager.predict_techniques.side_effect = Exception(
+            "Test error"
         )
 
         result = await tie_mcp_server._handle_predict_techniques(
@@ -126,31 +117,28 @@ class TestTIEMCPServer:
         assert len(result) > 0
         assert "Error" in result[0].text
 
-    @pytest.mark.parametrize("invalid_request", [
-        {},  # Missing required fields
-        {"techniques": []},  # Empty techniques list
-        {"techniques": ["T1059"], "top_k": -1},  # Invalid top_k
-        {"techniques": ["T1059"], "top_k": 101},  # top_k too large
-    ])
-    async def test_invalid_prediction_requests(
-        self, tie_mcp_server, invalid_request
-    ):
+    @pytest.mark.parametrize(
+        "invalid_request",
+        [
+            {},  # Missing required fields
+            {"techniques": []},  # Empty techniques list
+            {"techniques": ["T1059"], "top_k": -1},  # Invalid top_k
+            {"techniques": ["T1059"], "top_k": 101},  # top_k too large
+        ],
+    )
+    async def test_invalid_prediction_requests(self, tie_mcp_server, invalid_request):
         """Test handling of invalid prediction requests"""
         # The validation should happen at the MCP protocol level,
         # but we can test graceful handling of edge cases
         try:
-            result = await tie_mcp_server._handle_predict_techniques(
-                invalid_request
-            )
+            result = await tie_mcp_server._handle_predict_techniques(invalid_request)
             # Should either handle gracefully or raise appropriate error
             assert isinstance(result, list)
         except (ValueError, KeyError):
             # These exceptions are acceptable for invalid input
             pass
 
-    async def test_concurrent_requests(
-        self, tie_mcp_server, prediction_request
-    ):
+    async def test_concurrent_requests(self, tie_mcp_server, prediction_request):
         """Test handling of concurrent requests"""
         import asyncio
 

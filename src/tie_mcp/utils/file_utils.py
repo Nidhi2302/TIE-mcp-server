@@ -62,7 +62,7 @@ async def safe_file_operation(
 async def read_json_file(file_path: Path) -> dict:
     """Read a JSON file asynchronously"""
     try:
-        async with aiofiles.open(file_path, encoding='utf-8') as f:
+        async with aiofiles.open(file_path, encoding="utf-8") as f:
             content = await f.read()
             return json.loads(content)
     except Exception as e:
@@ -77,9 +77,9 @@ async def write_json_file(file_path: Path, data: dict, indent: int = 2):
         await ensure_directory(file_path.parent)
 
         # Write to temporary file first, then rename for atomic operation
-        temp_path = file_path.with_suffix(file_path.suffix + '.tmp')
+        temp_path = file_path.with_suffix(file_path.suffix + ".tmp")
 
-        async with aiofiles.open(temp_path, 'w', encoding='utf-8') as f:
+        async with aiofiles.open(temp_path, "w", encoding="utf-8") as f:
             content = json.dumps(data, indent=indent, ensure_ascii=False)
             await f.write(content)
 
@@ -100,8 +100,9 @@ async def write_json_file(file_path: Path, data: dict, indent: int = 2):
 async def read_pickle_file(file_path: Path) -> Any:
     """Read a pickle file asynchronously"""
     try:
+
         def _read_pickle():
-            with open(file_path, 'rb') as f:
+            with open(file_path, "rb") as f:
                 return pickle.load(f)
 
         return await safe_file_operation(_read_pickle)
@@ -118,8 +119,8 @@ async def write_pickle_file(file_path: Path, data: Any):
 
         def _write_pickle():
             # Write to temporary file first
-            temp_path = file_path.with_suffix(file_path.suffix + '.tmp')
-            with open(temp_path, 'wb') as f:
+            temp_path = file_path.with_suffix(file_path.suffix + ".tmp")
+            with open(temp_path, "wb") as f:
                 pickle.dump(data, f)
             # Atomic rename
             shutil.move(temp_path, file_path)
@@ -180,6 +181,7 @@ async def delete_directory(dir_path: Path, recursive: bool = True):
     """Delete a directory asynchronously"""
     try:
         if await aiofiles.os.path.exists(dir_path):
+
             def _delete_dir():
                 if recursive:
                     shutil.rmtree(dir_path)
@@ -219,6 +221,7 @@ async def list_files(
 ) -> list[Path]:
     """List files in a directory asynchronously"""
     try:
+
         def _list_files():
             if recursive:
                 return list(directory.rglob(pattern))
@@ -234,9 +237,10 @@ async def list_files(
 async def get_directory_size(directory: Path) -> int:
     """Get total size of a directory asynchronously"""
     try:
+
         def _get_dir_size():
             total_size = 0
-            for file_path in directory.rglob('*'):
+            for file_path in directory.rglob("*"):
                 if file_path.is_file():
                     total_size += file_path.stat().st_size
             return total_size
@@ -284,6 +288,7 @@ class TemporaryFile:
             fd, temp_path = tempfile.mkstemp(prefix=self.prefix, suffix=self.suffix)
             # Close the file descriptor since we'll use async file operations
             import os
+
             os.close(fd)
             return temp_path
 

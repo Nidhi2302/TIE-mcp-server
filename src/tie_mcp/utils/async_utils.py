@@ -12,7 +12,7 @@ from typing import Any, TypeVar
 
 logger = logging.getLogger(__name__)
 
-T = TypeVar('T')
+T = TypeVar("T")
 
 # Global thread pool for CPU-bound tasks
 _thread_pool = None
@@ -28,7 +28,7 @@ def get_thread_pool() -> ThreadPoolExecutor:
             if _thread_pool is None:
                 _thread_pool = ThreadPoolExecutor(
                     max_workers=4,  # Adjust based on your needs
-                    thread_name_prefix="tie_mcp_worker"
+                    thread_name_prefix="tie_mcp_worker",
                 )
 
     return _thread_pool
@@ -67,7 +67,7 @@ async def run_in_thread(func: Callable[..., T], *args, **kwargs) -> T:
 async def run_with_timeout(
     coro: Awaitable[T],
     timeout_seconds: float,
-    timeout_message: str = "Operation timed out"
+    timeout_message: str = "Operation timed out",
 ) -> T:
     """
     Run a coroutine with a timeout
@@ -91,8 +91,7 @@ async def run_with_timeout(
 
 
 async def gather_with_concurrency(
-    coroutines: list[Awaitable[T]],
-    max_concurrency: int = 10
+    coroutines: list[Awaitable[T]], max_concurrency: int = 10
 ) -> list[T]:
     """
     Run coroutines with limited concurrency
@@ -160,7 +159,8 @@ class RateLimiter:
 
             # Remove old calls outside the time window
             self.calls = [
-                call_time for call_time in self.calls
+                call_time
+                for call_time in self.calls
                 if now - call_time < self.time_window
             ]
 
@@ -184,7 +184,7 @@ async def retry_with_backoff(
     backoff_factor: float = 2.0,
     exceptions: tuple = (Exception,),
     *args,
-    **kwargs
+    **kwargs,
 ) -> T:
     """
     Retry an async function with exponential backoff
@@ -236,9 +236,7 @@ class AsyncBatch:
         self.max_concurrency = max_concurrency
 
     async def process(
-        self,
-        items: list[Any],
-        processor: Callable[[list[Any]], Awaitable[list[Any]]]
+        self, items: list[Any], processor: Callable[[list[Any]], Awaitable[list[Any]]]
     ) -> list[Any]:
         """
         Process items in batches
@@ -252,7 +250,7 @@ class AsyncBatch:
         """
         # Split items into batches
         batches = [
-            items[i:i + self.batch_size]
+            items[i : i + self.batch_size]
             for i in range(0, len(items), self.batch_size)
         ]
 
@@ -278,6 +276,7 @@ def async_lru_cache(maxsize: int = 128, ttl: float = 300.0):
         maxsize: Maximum cache size
         ttl: Time-to-live in seconds
     """
+
     def decorator(func):
         cache = {}
         access_times = {}
@@ -308,6 +307,7 @@ def async_lru_cache(maxsize: int = 128, ttl: float = 300.0):
             return result
 
         return wrapper
+
     return decorator
 
 

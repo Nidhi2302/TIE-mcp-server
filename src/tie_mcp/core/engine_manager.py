@@ -73,7 +73,7 @@ class TIEEngineManager:
         techniques: list[str],
         model_id: str | None = None,
         top_k: int = 20,
-        prediction_method: str = "dot"
+        prediction_method: str = "dot",
     ) -> PredictionResponse:
         """
         Predict MITRE ATT&CK techniques based on observed techniques
@@ -97,8 +97,7 @@ class TIEEngineManager:
 
             # Run prediction in thread to avoid blocking
             predictions_df = await run_in_thread(
-                engine.predict_for_new_report,
-                frozenset(techniques)
+                engine.predict_for_new_report, frozenset(techniques)
             )
 
             # Sort by predictions and get top k
@@ -113,12 +112,14 @@ class TIEEngineManager:
                 score = float(row["predictions"])
                 technique_name = row.get("technique_name", "Unknown")
 
-                predicted_techniques.append({
-                    "technique_id": technique_id,
-                    "technique_name": technique_name,
-                    "score": score,
-                    "in_training_data": bool(row["training_data"])
-                })
+                predicted_techniques.append(
+                    {
+                        "technique_id": technique_id,
+                        "technique_name": technique_name,
+                        "score": score,
+                        "in_training_data": bool(row["training_data"]),
+                    }
+                )
 
             # Record metrics
             duration = asyncio.get_event_loop().time() - start_time
@@ -126,7 +127,7 @@ class TIEEngineManager:
                 duration=duration,
                 input_techniques_count=len(techniques),
                 output_techniques_count=len(predicted_techniques),
-                model_id=model_id or "default"
+                model_id=model_id or "default",
             )
 
             return PredictionResponse(
@@ -134,7 +135,7 @@ class TIEEngineManager:
                 input_techniques=techniques,
                 model_id=model_id or "default",
                 prediction_method=prediction_method,
-                execution_time_seconds=duration
+                execution_time_seconds=duration,
             )
 
         except Exception as e:
@@ -150,7 +151,7 @@ class TIEEngineManager:
         validation_ratio: float = 0.1,
         test_ratio: float = 0.2,
         embedding_dimension: int = 4,
-        auto_hyperparameter_tuning: bool = True
+        auto_hyperparameter_tuning: bool = True,
     ) -> TrainingResponse:
         """
         Train a new TIE model
@@ -175,13 +176,11 @@ class TIEEngineManager:
             # Build data matrices
             data_builder = ReportTechniqueMatrixBuilder(
                 combined_dataset_filepath=dataset_path,
-                enterprise_attack_filepath=settings.enterprise_attack_filepath
+                enterprise_attack_filepath=settings.enterprise_attack_filepath,
             )
 
             training_data, test_data, validation_data = await run_in_thread(
-                data_builder.build_train_test_validation,
-                test_ratio,
-                validation_ratio
+                data_builder.build_train_test_validation, test_ratio, validation_ratio
             )
 
             # Create model
@@ -189,7 +188,7 @@ class TIEEngineManager:
                 model_type=model_type,
                 m=training_data.m,
                 n=training_data.n,
-                k=embedding_dimension
+                k=embedding_dimension,
             )
 
             # Create TIE engine
@@ -205,14 +204,14 @@ class TIEEngineManager:
                 test_data=test_data,
                 model=model,
                 prediction_method=pred_method,
-                enterprise_attack_filepath=settings.enterprise_attack_filepath
+                enterprise_attack_filepath=settings.enterprise_attack_filepath,
             )
 
             # Train model
             if auto_hyperparameter_tuning:
                 best_hyperparameters = await run_in_thread(
                     engine.fit_with_validation,
-                    **self._get_default_hyperparameters(model_type)
+                    **self._get_default_hyperparameters(model_type),
                 )
             else:
                 hyperparameters = hyperparameters or {}
@@ -228,7 +227,7 @@ class TIEEngineManager:
                 model_type=model_type,
                 hyperparameters=best_hyperparameters,
                 metrics=evaluation_metrics,
-                dataset_path=dataset_path
+                dataset_path=dataset_path,
             )
 
             duration = asyncio.get_event_loop().time() - start_time
@@ -238,7 +237,7 @@ class TIEEngineManager:
                 duration=duration,
                 model_type=model_type,
                 dataset_size=training_data.m,
-                success=True
+                success=True,
             )
 
             logger.info(f"Model training completed: {model_id}")
@@ -253,25 +252,20 @@ class TIEEngineManager:
                     "training_samples": training_data.m,
                     "validation_samples": validation_data.m,
                     "test_samples": test_data.m,
-                    "num_techniques": training_data.n
-                }
+                    "num_techniques": training_data.n,
+                },
             )
 
         except Exception as e:
             duration = asyncio.get_event_loop().time() - start_time
             await self.metrics_collector.record_training(
-                duration=duration,
-                model_type=model_type,
-                dataset_size=0,
-                success=False
+                duration=duration, model_type=model_type, dataset_size=0, success=False
             )
             logger.error(f"Error in train_model: {e}")
             raise
 
     async def evaluate_model(
-        self,
-        model_id: str,
-        k_values: list[int] = None
+        self, model_id: str, k_values: list[int] = None
     ) -> ModelEvaluationResponse:
         """Evaluate a trained model"""
         if k_values is None:
@@ -292,9 +286,7 @@ class TIEEngineManager:
                 metrics[f"ndcg_at_{k}"] = ndcg
 
             return ModelEvaluationResponse(
-                model_id=model_id,
-                metrics=metrics,
-                k_values=k_values
+                model_id=model_id, metrics=metrics, k_values=k_values
             )
 
         except Exception as e:
@@ -305,7 +297,7 @@ class TIEEngineManager:
         self,
         technique_ids: list[str] | None = None,
         search_term: str | None = None,
-        tactic: str | None = None
+        tactic: str | None = None,
     ) -> list[AttackTechniqueInfo]:
         """Get information about ATT&CK techniques"""
         try:
@@ -325,11 +317,13 @@ class TIEEngineManager:
 
                 # TODO: Add tactic filtering (requires parsing ATT&CK data)
 
-                techniques.append(AttackTechniqueInfo(
-                    technique_id=technique_id,
-                    technique_name=technique_name,
-                    tactic=None  # TODO: Extract from ATT&CK data
-                ))
+                techniques.append(
+                    AttackTechniqueInfo(
+                        technique_id=technique_id,
+                        technique_name=technique_name,
+                        tactic=None,  # TODO: Extract from ATT&CK data
+                    )
+                )
 
             return techniques
 
@@ -361,8 +355,7 @@ class TIEEngineManager:
         """Load ATT&CK techniques from STIX file"""
         try:
             self.attack_techniques_cache = await run_in_thread(
-                get_mitre_technique_ids_to_names,
-                settings.enterprise_attack_filepath
+                get_mitre_technique_ids_to_names, settings.enterprise_attack_filepath
             )
             logger.info(f"Loaded {len(self.attack_techniques_cache)} ATT&CK techniques")
         except Exception as e:
@@ -391,13 +384,13 @@ class TIEEngineManager:
             return {
                 "epochs": [settings.model.wals_epochs],
                 "c": settings.model.wals_c_values,
-                "regularization_coefficient": settings.model.wals_regularization_values
+                "regularization_coefficient": settings.model.wals_regularization_values,
             }
         elif model_type == "bpr":
             return {
                 "epochs": [settings.model.bpr_epochs],
                 "learning_rate": settings.model.bpr_learning_rates,
-                "regularization": settings.model.bpr_regularization_values
+                "regularization": settings.model.bpr_regularization_values,
             }
         else:
             return {}

@@ -12,6 +12,7 @@ from pydantic_settings import BaseSettings
 
 class Environment(str, Enum):
     """Environment types"""
+
     DEVELOPMENT = "development"
     STAGING = "staging"
     PRODUCTION = "production"
@@ -19,6 +20,7 @@ class Environment(str, Enum):
 
 class LogLevel(str, Enum):
     """Log levels"""
+
     DEBUG = "DEBUG"
     INFO = "INFO"
     WARNING = "WARNING"
@@ -28,6 +30,7 @@ class LogLevel(str, Enum):
 
 class ModelType(str, Enum):
     """Supported model types"""
+
     WALS = "wals"
     BPR = "bpr"
     IMPLICIT_WALS = "implicit_wals"
@@ -38,12 +41,14 @@ class ModelType(str, Enum):
 
 class PredictionMethod(str, Enum):
     """Prediction methods"""
+
     DOT = "dot"
     COSINE = "cosine"
 
 
 class DatabaseSettings(BaseSettings):
     """Database configuration"""
+
     url: str = Field(default="postgresql://tie:tie@localhost:5432/tie_mcp")
     pool_size: int = Field(default=10)
     max_overflow: int = Field(default=20)
@@ -56,6 +61,7 @@ class DatabaseSettings(BaseSettings):
 
 class RedisSettings(BaseSettings):
     """Redis configuration"""
+
     url: str = Field(default="redis://localhost:6379")
     db: int = Field(default=0)
     max_connections: int = Field(default=50)
@@ -69,6 +75,7 @@ class RedisSettings(BaseSettings):
 
 class CelerySettings(BaseSettings):
     """Celery configuration"""
+
     broker_url: str = Field(default="redis://localhost:6379/1")
     result_backend: str = Field(default="redis://localhost:6379/2")
     task_serializer: str = Field(default="json")
@@ -78,11 +85,13 @@ class CelerySettings(BaseSettings):
     enable_utc: bool = Field(default=True)
 
     # Task routing
-    task_routes: dict[str, dict[str, str]] = Field(default_factory=lambda: {
-        "tie_mcp.tasks.training.*": {"queue": "training"},
-        "tie_mcp.tasks.inference.*": {"queue": "inference"},
-        "tie_mcp.tasks.data_processing.*": {"queue": "data_processing"},
-    })
+    task_routes: dict[str, dict[str, str]] = Field(
+        default_factory=lambda: {
+            "tie_mcp.tasks.training.*": {"queue": "training"},
+            "tie_mcp.tasks.inference.*": {"queue": "inference"},
+            "tie_mcp.tasks.data_processing.*": {"queue": "data_processing"},
+        }
+    )
 
     class Config:
         env_prefix = "CELERY_"
@@ -90,6 +99,7 @@ class CelerySettings(BaseSettings):
 
 class MLFlowSettings(BaseSettings):
     """MLFlow configuration"""
+
     tracking_uri: str = Field(default="http://localhost:5000")
     experiment_name: str = Field(default="TIE_MCP_Experiments")
     registry_uri: str | None = Field(default=None)
@@ -102,15 +112,18 @@ class MLFlowSettings(BaseSettings):
 
 class MonitoringSettings(BaseSettings):
     """Monitoring configuration"""
+
     prometheus_port: int = Field(default=8001)
     health_check_interval: int = Field(default=30)
     metrics_retention_days: int = Field(default=30)
-    alert_thresholds: dict[str, float] = Field(default_factory=lambda: {
-        "cpu_usage": 80.0,
-        "memory_usage": 85.0,
-        "inference_latency_p95": 5.0,  # seconds
-        "error_rate": 5.0,  # percentage
-    })
+    alert_thresholds: dict[str, float] = Field(
+        default_factory=lambda: {
+            "cpu_usage": 80.0,
+            "memory_usage": 85.0,
+            "inference_latency_p95": 5.0,  # seconds
+            "error_rate": 5.0,  # percentage
+        }
+    )
 
     class Config:
         env_prefix = "MONITORING_"
@@ -118,6 +131,7 @@ class MonitoringSettings(BaseSettings):
 
 class SecuritySettings(BaseSettings):
     """Security configuration"""
+
     secret_key: str = Field(default="your-secret-key-change-in-production")
     api_key_header: str = Field(default="X-API-Key")
     allowed_hosts: list[str] = Field(default=["*"])
@@ -133,6 +147,7 @@ class SecuritySettings(BaseSettings):
 
 class ModelSettings(BaseSettings):
     """Model configuration"""
+
     default_model_type: ModelType = Field(default=ModelType.WALS)
     default_prediction_method: PredictionMethod = Field(default=PredictionMethod.DOT)
     default_embedding_dimension: int = Field(default=4)
