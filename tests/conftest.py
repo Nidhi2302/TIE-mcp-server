@@ -190,7 +190,9 @@ def mock_metrics_collector() -> MetricsCollector:
 
 
 @pytest_asyncio.fixture
-async def mock_model_manager(mock_db_manager, mock_metrics_collector) -> AsyncGenerator[ModelManager, None]:
+async def mock_model_manager(
+    mock_db_manager, mock_metrics_collector
+) -> AsyncGenerator[ModelManager, None]:
     """Mock model manager for testing"""
     model_manager = AsyncMock(spec=ModelManager)
     model_manager.initialize = AsyncMock()
@@ -206,7 +208,9 @@ async def mock_model_manager(mock_db_manager, mock_metrics_collector) -> AsyncGe
 
 
 @pytest_asyncio.fixture
-async def mock_engine_manager(mock_model_manager, mock_metrics_collector) -> AsyncGenerator[TIEEngineManager, None]:
+async def mock_engine_manager(
+    mock_model_manager, mock_metrics_collector
+) -> AsyncGenerator[TIEEngineManager, None]:
     """Mock engine manager for testing"""
     engine_manager = AsyncMock(spec=TIEEngineManager)
     engine_manager.initialize = AsyncMock()
@@ -232,7 +236,12 @@ async def mock_engine_manager(mock_model_manager, mock_metrics_collector) -> Asy
 
 
 @pytest_asyncio.fixture
-async def tie_mcp_server(mock_engine_manager, mock_model_manager, mock_db_manager, mock_metrics_collector) -> AsyncGenerator[TIEMCPServer, None]:
+async def tie_mcp_server(
+    mock_engine_manager,
+    mock_model_manager,
+    mock_db_manager,
+    mock_metrics_collector,
+) -> AsyncGenerator[TIEMCPServer, None]:
     """TIE MCP Server instance for testing"""
     server = TIEMCPServer()
 

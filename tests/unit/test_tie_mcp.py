@@ -15,7 +15,7 @@ class TestTIEMCPServer:
     @pytest.fixture
     async def client(self):
         """Fixture to create a test client"""
-        from src.tie_mcp.server import TIEMCPServer
+        from tie_mcp.server import TIEMCPServer
 
         server = TIEMCPServer()
         await server.initialize()
@@ -31,10 +31,14 @@ class TestTIEMCPServer:
         assert len(tools) > 0, "No tools available"
 
         tool_names = {t.name for t in tools}
-        assert "predict_techniques" in tool_names
-        assert "train_model" in tool_names
-        assert "list_models" in tool_names
-        assert "get_attack_techniques" in tool_names
+        expected_tools = [
+            "predict_techniques",
+            "train_model",
+            "list_models",
+            "get_attack_techniques"
+        ]
+        for tool_name in expected_tools:
+            assert tool_name in tool_names
 
     async def test_server_resources(self, client):
         """Test that the server provides the expected resources"""
@@ -42,10 +46,14 @@ class TestTIEMCPServer:
         assert len(resources) > 0, "No resources available"
 
         resource_uris = {r.uri for r in resources}
-        assert "models://" in resource_uris
-        assert "datasets://" in resource_uris
-        assert "attack://techniques" in resource_uris
-        assert "metrics://system" in resource_uris
+        expected_resources = [
+            "models://",
+            "datasets://",
+            "attack://techniques",
+            "metrics://system"
+        ]
+        for resource_uri in expected_resources:
+            assert resource_uri in resource_uris
 
     async def test_technique_prediction(self, client):
         """Test the technique prediction functionality"""
