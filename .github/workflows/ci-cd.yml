@@ -92,6 +92,7 @@ jobs:
         REDIS_URL: redis://localhost:6379
         ENVIRONMENT: testing
       run: |
+        export PYTHONPATH=src
         poetry run pytest tests/ -v --cov=tie_mcp --cov-report=xml --cov-report=html
     
     - name: Upload coverage reports to Codecov
@@ -243,6 +244,7 @@ jobs:
         REDIS_URL: redis://localhost:6379
         ENVIRONMENT: testing
       run: |
+        export PYTHONPATH=src
         poetry run pytest tests/performance/ -v --tb=short
     
     - name: Upload performance results
