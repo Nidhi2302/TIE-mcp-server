@@ -1,15 +1,29 @@
+from typing import Any
+
 import numpy as np
-import tensorflow as tf
 from sklearn.metrics import mean_squared_error
 
-from tie.constants import PredictionMethod
-from tie.utils import calculate_predicted_matrix
+# Optional TF dependency (sparse tensor handling). Guard so module import
+# does not fail when tensorflow is absent (e.g. slim CI environments).
+try:  # pragma: no cover - optional dependency
+    import tensorflow as tf  # type: ignore
+    _TF_AVAILABLE = True
+except Exception:  # pragma: no cover
+    tf = None  # type: ignore
+    _TF_AVAILABLE = False
 
+from ..constants import PredictionMethod
+from ..utils import calculate_predicted_matrix
 from .recommender import Recommender
 
 
 class WalsRecommender(Recommender):
-    """A WALS matrix factorization collaborative filtering recommender model."""
+    """A WALS matrix factorization collaborative filtering recommender model.
+
+    TensorFlow optional:
+      - Passing TensorFlow SparseTensor inputs requires tensorflow installed.
+      - You may also pass a dense numpy ndarray of shape (m, n) to fit/evaluate.
+    """
 
     # Abstraction function:
     # AF(U, V) = a matrix factorization collaborative filtering recommendation model
@@ -190,7 +204,7 @@ class WalsRecommender(Recommender):
                 + regularization_coefficient * np.identity(k)
             )
 
-            # removed C_u here since unneccessary in binary case
+            # removed C_u here since unnecessary in binary case
             # P_u is already binary
             U_i = inv @ V.T @ P_u
 
@@ -198,9 +212,29 @@ class WalsRecommender(Recommender):
 
         return new_U
 
+    def _coerce_input_matrix(self, data: Any, expect_shape: tuple[int, int]) -> np.ndarray:
+        """Convert supported input (TF sparse tensor or ndarray) to dense ndarray."""
+        if hasattr(data, "indices") and hasattr(data, "values"):
+            if not _TF_AVAILABLE:
+                raise ImportError(
+                    "TensorFlow required to pass a SparseTensor to WalsRecommender (not installed)"
+                )
+            dense = tf.sparse.to_dense(tf.sparse.reorder(data)).numpy()  # type: ignore[attr-defined]
+        else:
+            if not isinstance(data, np.ndarray):
+                raise TypeError(
+                    "data must be either a TensorFlow SparseTensor or a numpy ndarray"
+                )
+            dense = data
+        if dense.shape != expect_shape:
+            raise ValueError(
+                f"Input matrix shape mismatch: expected {expect_shape}, got {dense.shape}"
+            )
+        return dense
+
     def fit(
         self,
-        data: tf.SparseTensor,
+        data: Any,
         epochs: int,
         c: float = 0.024,
         regularization_coefficient: float = 0.01,
@@ -208,7 +242,7 @@ class WalsRecommender(Recommender):
         """Fits the model to data.
 
         Args:
-            data: An mxn tensor of training data.
+            data: An mxn tensor of training data (TF SparseTensor or ndarray).
             epochs: Number of training epochs, where each the model is trained on the
                 cardinality dataset in each epoch.
             c: Weight for negative training examples in the loss function,
@@ -226,12 +260,7 @@ class WalsRecommender(Recommender):
         if not (0 < c < 1):
             raise ValueError(f"c must satisfy 0 < c < 1 (got {c})")
 
-        P: np.ndarray = tf.sparse.to_dense(tf.sparse.reorder(data)).numpy()
-
-        if P.shape != (self.m, self.n):
-            raise ValueError(
-                f"P shape mismatch: expected {(self.m, self.n)}, got {P.shape}"
-            )
+        P: np.ndarray = self._coerce_input_matrix(data, (self.m, self.n))
 
         alpha = (1 / c) - 1
 
@@ -248,7 +277,7 @@ class WalsRecommender(Recommender):
 
     def evaluate(
         self,
-        test_data: tf.SparseTensor,
+        test_data: Any,
         method: PredictionMethod = PredictionMethod.DOT,
     ) -> float:
         """Evaluates the solution.
@@ -256,10 +285,7 @@ class WalsRecommender(Recommender):
         Requires that the model has been trained.
 
         Args:
-            test_data: mxn tensor on which to evaluate the model.
-                Requires that mxn match the dimensions of the training tensor and
-                each row i and column j correspond to the same entity and item
-                in the training tensor, respectively.
+            test_data: mxn test data (TF SparseTensor or ndarray)
             method: The prediction method to use.
 
         Returns:
@@ -267,12 +293,29 @@ class WalsRecommender(Recommender):
         """
         predictions_matrix = self.predict(method)
 
-        row_indices = tuple(index[0] for index in test_data.indices)
-        column_indices = tuple(index[1] for index in test_data.indices)
-        prediction_values = predictions_matrix[row_indices, column_indices]
+        if hasattr(test_data, "indices") and hasattr(test_data, "values"):
+            if not _TF_AVAILABLE:
+                raise ImportError(
+                    "TensorFlow required to evaluate with a SparseTensor (not installed)"
+                )
+            row_indices = tuple(index[0] for index in test_data.indices)
+            column_indices = tuple(index[1] for index in test_data.indices)
+            prediction_values = predictions_matrix[row_indices, column_indices]
+            values = test_data.values
+        else:
+            if not isinstance(test_data, np.ndarray):
+                raise TypeError(
+                    "test_data must be a TensorFlow SparseTensor or a numpy ndarray"
+                )
+            if test_data.shape != (self.m, self.n):
+                raise ValueError(
+                    f"test_data shape mismatch: expected {(self.m, self.n)}, got {test_data.shape}"
+                )
+            prediction_values = predictions_matrix[test_data > 0]
+            values = test_data[test_data > 0]
 
         self._checkrep()
-        return mean_squared_error(test_data.values, prediction_values)
+        return mean_squared_error(values, prediction_values)
 
     def predict(self, method: PredictionMethod = PredictionMethod.DOT) -> np.ndarray:
         """Gets the model predictions.
@@ -292,7 +335,7 @@ class WalsRecommender(Recommender):
 
     def predict_new_entity(
         self,
-        entity: tf.SparseTensor,
+        entity: Any,
         c: float,
         regularization_coefficient: float,
         method: PredictionMethod = PredictionMethod.DOT,
@@ -301,9 +344,7 @@ class WalsRecommender(Recommender):
         """Recommends items to an unseen entity.
 
         Args:
-            entity: A length-n sparse tensor of consisting of the new entity's
-                ratings for each item, indexed exactly as the items used to
-                train this model.
+            entity: A length-n vector of the new entity's ratings (TF SparseTensor or ndarray).
             c: Weight for negative training examples in the loss function,
                 ie each positive example takes weight 1, while negative examples take
                 discounted weight c.  Requires 0 < c < 1.
@@ -314,17 +355,32 @@ class WalsRecommender(Recommender):
         Returns:
             An array of predicted values for the new entity.
         """
-        entity = tf.sparse.to_dense(tf.sparse.reorder(entity)).numpy()
-        if entity.shape != (self.n,):
+        if not (0 < c < 1):
+            raise ValueError(f"c must satisfy 0 < c < 1 (got {c})")
+
+        if hasattr(entity, "indices") and hasattr(entity, "values"):
+            if not _TF_AVAILABLE:
+                raise ImportError(
+                    "TensorFlow required for SparseTensor entity input (not installed)"
+                )
+            dense_entity = tf.sparse.to_dense(tf.sparse.reorder(entity)).numpy()  # type: ignore[attr-defined]
+        else:
+            if not isinstance(entity, np.ndarray):
+                raise TypeError(
+                    "entity must be a TensorFlow SparseTensor or a numpy ndarray"
+                )
+            dense_entity = entity
+
+        if dense_entity.shape != (self.n,):
             raise ValueError(
-                f"entity shape mismatch: expected {(self.n,)}, got {entity.shape}"
+                f"entity shape mismatch: expected {(self.n,)}, got {dense_entity.shape}"
             )
 
         alpha = (1 / c) - 1
 
         new_entity_factor = self._update_factor(
             opposing_factors=self._V,
-            data=np.expand_dims(entity, axis=1),
+            data=np.expand_dims(dense_entity, axis=1),
             alpha=alpha,
             regularization_coefficient=regularization_coefficient,
         )

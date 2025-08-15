@@ -1,10 +1,19 @@
+from typing import Any
+
 import numpy as np
-import tensorflow as tf
 from scipy import sparse
 from sklearn.metrics import mean_squared_error
 
-from tie.constants import PredictionMethod
-from tie.utils import calculate_predicted_matrix
+# Optional dependency: TensorFlow (only needed if passing SparseTensor inputs)
+try:  # pragma: no cover - optional dependency
+    import tensorflow as tf  # type: ignore
+    _TF_AVAILABLE = True
+except Exception:  # pragma: no cover
+    tf = None  # type: ignore
+    _TF_AVAILABLE = False
+
+from ..constants import PredictionMethod
+from ..utils import calculate_predicted_matrix
 
 # Optional dependency: implicit (can be excluded in lightweight / CI environments)
 try:  # pragma: no cover - import guard
@@ -87,7 +96,7 @@ class ImplicitBPRRecommender:
 
     def fit(
         self,
-        data: tf.SparseTensor,
+        data: Any,
         learning_rate: float,
         epochs: int,
         regularization_coefficient: float,
@@ -110,7 +119,18 @@ class ImplicitBPRRecommender:
 
         if BayesianPersonalizedRanking is None:  # pragma: no cover - defensive
             raise ImportError(
-                "implicit library not installed; install 'implicit' to use ImplicitBPRRecommender"
+                "implicit library not installed; install 'implicit' to use "
+                "ImplicitBPRRecommender"
+            )
+        if hasattr(data, "indices") and hasattr(data, "values"):
+            if not _TF_AVAILABLE:
+                raise ImportError(
+                    "TensorFlow not installed; required when passing a SparseTensor to fit()"
+                )
+        elif not isinstance(data, sparse.spmatrix):
+            # Expect a TF SparseTensor-like object; if user passes unsupported type, raise.
+            raise TypeError(
+                "data must be a TensorFlow SparseTensor (if tensorflow installed)"
             )
         self._model = BayesianPersonalizedRanking(
             factors=self._k,
@@ -120,10 +140,19 @@ class ImplicitBPRRecommender:
             verify_negative_samples=True,
         )
 
+        if not hasattr(data, "indices") or not hasattr(data, "values"):
+            raise TypeError(
+                "data must be a TensorFlow SparseTensor (with indices/values attributes)"
+            )
         row_indices = tuple(index[0] for index in data.indices)
         column_indices = tuple(index[1] for index in data.indices)
+        shape = getattr(data, "shape", None)
+        if shape is None:
+            # TF SparseTensor exposes .dense_shape; fall back to that if present
+            shape_attr = getattr(data, "dense_shape", None)
+            shape = tuple(int(x) for x in shape_attr) if shape_attr is not None else None
         sparse_data = sparse.csr_matrix(
-            (data.values, (row_indices, column_indices)), shape=data.shape
+            (data.values, (row_indices, column_indices)), shape=shape
         )
 
         self._model.fit(sparse_data)
@@ -132,7 +161,7 @@ class ImplicitBPRRecommender:
 
     def evaluate(
         self,
-        test_data: tf.SparseTensor,
+        test_data: Any,
         method: PredictionMethod = PredictionMethod.DOT,
     ) -> float:
         """Evaluates the solution.
@@ -151,6 +180,10 @@ class ImplicitBPRRecommender:
         """
         predictions_matrix = self.predict(method)
 
+        if not hasattr(test_data, "indices") or not hasattr(test_data, "values"):
+            raise TypeError(
+                "test_data must be a TensorFlow SparseTensor (with indices/values attributes)"
+            )
         row_indices = tuple(index[0] for index in test_data.indices)
         column_indices = tuple(index[1] for index in test_data.indices)
         prediction_values = predictions_matrix[row_indices, column_indices]
@@ -179,7 +212,7 @@ class ImplicitBPRRecommender:
 
     def predict_new_entity(
         self,
-        entity: tf.SparseTensor,
+        entity: Any,
         method: PredictionMethod = PredictionMethod.DOT,
         **kwargs,
     ) -> np.array:

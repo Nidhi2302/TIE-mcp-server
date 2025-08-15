@@ -1,14 +1,23 @@
+from typing import Any
+
 import numpy as np
-import tensorflow as tf
 from scipy import sparse
 from sklearn.metrics import mean_squared_error
 
-from tie.constants import PredictionMethod
-from tie.utils import calculate_predicted_matrix
+# Optional TensorFlow dependency (only needed if passing SparseTensor inputs)
+try:  # pragma: no cover - optional dependency
+    import tensorflow as tf  # type: ignore
+    _TF_AVAILABLE = True
+except Exception:  # pragma: no cover
+    tf = None  # type: ignore
+    _TF_AVAILABLE = False
 
+from ..constants import PredictionMethod
+from ..utils import calculate_predicted_matrix
 from .recommender import Recommender
 
-# Optional dependency: implicit (ALS model); guarded for environments without build toolchain
+# Optional dependency: implicit (ALS model); guarded for environments
+# without native build toolchain; module import is optional.
 try:  # pragma: no cover - import guard
     from implicit.als import AlternatingLeastSquares  # type: ignore
 except Exception:  # pragma: no cover
@@ -83,7 +92,7 @@ class ImplicitWalsRecommender(Recommender):
 
     def fit(
         self,
-        data: tf.SparseTensor,
+        data: Any,
         epochs: int,
         c: float = 0.024,
         regularization_coefficient: float = 0.01,
@@ -107,7 +116,8 @@ class ImplicitWalsRecommender(Recommender):
         alpha = (1 / c) - 1
         if AlternatingLeastSquares is None:  # pragma: no cover - defensive
             raise ImportError(
-                "implicit library not installed; install 'implicit' to use ImplicitWalsRecommender"
+                "implicit library not installed; install 'implicit' to use "
+                "ImplicitWalsRecommender"
             )
         self._model = AlternatingLeastSquares(
             factors=self._k,
@@ -116,11 +126,26 @@ class ImplicitWalsRecommender(Recommender):
             alpha=alpha,
         )
 
-        row_indices = tuple(index[0] for index in data.indices)
-        column_indices = tuple(index[1] for index in data.indices)
-        sparse_data = sparse.csr_matrix(
-            (data.values, (row_indices, column_indices)), shape=data.shape
-        )
+        if hasattr(data, "indices") and hasattr(data, "values"):
+            if not _TF_AVAILABLE:
+                raise ImportError(
+                    "TensorFlow not installed; required when passing a SparseTensor to fit()"
+                )
+            row_indices = tuple(index[0] for index in data.indices)
+            column_indices = tuple(index[1] for index in data.indices)
+            shape = getattr(data, "shape", None)
+            if shape is None:
+                shape_attr = getattr(data, "dense_shape", None)
+                shape = tuple(int(x) for x in shape_attr) if shape_attr is not None else None
+            sparse_data = sparse.csr_matrix(
+                (data.values, (row_indices, column_indices)), shape=shape
+            )
+        elif isinstance(data, sparse.spmatrix):
+            sparse_data = data
+        else:
+            raise TypeError(
+                "data must be a TensorFlow SparseTensor (requires tensorflow) or a scipy sparse matrix"
+            )
 
         self._model.fit(sparse_data)
 
@@ -128,7 +153,7 @@ class ImplicitWalsRecommender(Recommender):
 
     def evaluate(
         self,
-        test_data: tf.SparseTensor,
+        test_data: Any,
         method: PredictionMethod = PredictionMethod.DOT,
     ) -> float:
         """Evaluates the solution.
@@ -147,12 +172,26 @@ class ImplicitWalsRecommender(Recommender):
         """
         predictions_matrix = self.predict(method)
 
-        row_indices = tuple(index[0] for index in test_data.indices)
-        column_indices = tuple(index[1] for index in test_data.indices)
-        prediction_values = predictions_matrix[row_indices, column_indices]
+        if hasattr(test_data, "indices") and hasattr(test_data, "values"):
+            if not _TF_AVAILABLE:
+                raise ImportError(
+                    "TensorFlow not installed; required when passing a SparseTensor to evaluate()"
+                )
+            row_indices = tuple(index[0] for index in test_data.indices)
+            column_indices = tuple(index[1] for index in test_data.indices)
+            prediction_values = predictions_matrix[row_indices, column_indices]
+            values = test_data.values
+        elif isinstance(test_data, sparse.spmatrix):
+            coo = test_data.tocoo()
+            prediction_values = predictions_matrix[coo.row, coo.col]
+            values = coo.data
+        else:
+            raise TypeError(
+                "test_data must be a TensorFlow SparseTensor (requires tensorflow) or a scipy sparse matrix"
+            )
 
         self._checkrep()
-        return mean_squared_error(test_data.values, prediction_values)
+        return mean_squared_error(values, prediction_values)
 
     def predict(self, method: PredictionMethod = PredictionMethod.DOT) -> np.ndarray:
         """Gets the model predictions.
@@ -174,7 +213,7 @@ class ImplicitWalsRecommender(Recommender):
 
     def predict_new_entity(
         self,
-        entity: tf.SparseTensor,
+        entity: Any,
         method: PredictionMethod = PredictionMethod.DOT,
         **kwargs,
     ) -> np.array:

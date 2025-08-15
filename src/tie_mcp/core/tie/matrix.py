@@ -1,6 +1,7 @@
+from typing import Any
+
 import numpy as np
 import pandas as pd
-import tensorflow as tf
 
 
 class ReportTechniqueMatrix:
@@ -91,9 +92,19 @@ class ReportTechniqueMatrix:
         self._checkrep()
         return self._technique_ids
 
-    def to_sparse_tensor(self) -> tf.SparseTensor:
-        """Converts the matrix to a sparse tensor."""
+    def to_sparse_tensor(self) -> Any:
+        """Converts the matrix to a TensorFlow sparse tensor.
+
+        Raises:
+            ImportError: If TensorFlow is not installed in the current environment.
+        """
         self._checkrep()
+        try:
+            import tensorflow as tf  # type: ignore
+        except Exception as e:  # pragma: no cover - optional dependency guard
+            raise ImportError(
+                "TensorFlow is required for to_sparse_tensor(); install tensorflow to use this method."
+            ) from e
         return tf.SparseTensor(
             indices=self._indices, values=self._values, dense_shape=(self.m, self.n)
         )

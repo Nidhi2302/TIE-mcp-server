@@ -1,12 +1,20 @@
 import math
+from typing import Any
 
-import keras
 import numpy as np
-import tensorflow as tf
 
-from tie.constants import PredictionMethod
-from tie.utils import calculate_predicted_matrix
+# Optional heavy deps: tensorflow / keras guarded so lightweight environments work.
+try:  # pragma: no cover - optional dependency guard
+    import keras  # type: ignore
+    import tensorflow as tf  # type: ignore
+    _TF_AVAILABLE = True
+except Exception:  # pragma: no cover
+    tf = None  # type: ignore
+    keras = None  # type: ignore
+    _TF_AVAILABLE = False
 
+from ..constants import PredictionMethod
+from ..utils import calculate_predicted_matrix
 from .recommender import Recommender
 
 
@@ -213,12 +221,15 @@ class BPRRecommender(Recommender):
 
     def fit(
         self,
-        data: tf.SparseTensor,
+        data: Any,
         learning_rate: float,
         epochs: int,
         regularization_coefficient: float,
     ):
         """Fits the model to data.
+
+        Raises:
+            ImportError: If TensorFlow is not installed.
 
         Args:
             data: An mxn tensor of training data
@@ -227,11 +238,15 @@ class BPRRecommender(Recommender):
             epochs: Number of training epochs, where each the model is trained on the
                 cardinality of the dataset in each epoch.
             regularization_coefficient: Coefficient on the L2 regularization term.
-            method: The prediction method to use.
 
         Mutates:
             The recommender to the new trained state.
         """
+        if not _TF_AVAILABLE:
+            raise ImportError(
+                "TensorFlow/Keras not installed; install tensorflow and keras to use fit()"
+            )
+
         # start by resetting embeddings for proper fit
         self._reset_embeddings()
 
@@ -288,7 +303,7 @@ class BPRRecommender(Recommender):
 
     def evaluate(
         self,
-        test_data: tf.SparseTensor,
+        test_data: Any,
         method: PredictionMethod = PredictionMethod.DOT,
     ) -> float:
         """Evaluates the solution.
@@ -305,12 +320,14 @@ class BPRRecommender(Recommender):
         Returns:
             The mean squared error of the test data.
         """
+        if not _TF_AVAILABLE:
+            raise ImportError(
+                "TensorFlow/Keras not installed; install tensorflow and keras to use evaluate()"
+            )
         pred = self.predict(method)
         predictions = tf.gather_nd(pred, test_data.indices)
-
         loss = keras.losses.MeanSquaredError()
-
-        return loss(test_data.values, predictions).numpy()
+        return float(loss(test_data.values, predictions).numpy())
 
     def predict(self, method: PredictionMethod = PredictionMethod.DOT) -> np.ndarray:
         """Gets the model predictions.
@@ -330,7 +347,7 @@ class BPRRecommender(Recommender):
 
     def predict_new_entity(
         self,
-        entity: tf.SparseTensor,
+        entity: Any,
         learning_rate: float,
         epochs: int,
         regularization_coefficient: float,
@@ -339,8 +356,11 @@ class BPRRecommender(Recommender):
     ) -> np.array:
         """Recommends items to an unseen entity.
 
+        Raises:
+            ImportError: If TensorFlow is not installed.
+
         Args:
-            entity: A length-n sparse tensor of consisting of the new entity's
+            entity: A length-n sparse tensor consisting of the new entity's
                 ratings for each item, indexed exactly as the items used to
                 train this model.
             learning_rate: Learning rate for each gradient step performed on a single
@@ -353,6 +373,10 @@ class BPRRecommender(Recommender):
         Returns:
             An array of predicted values for the new entity.
         """
+        if not _TF_AVAILABLE:
+            raise ImportError(
+                "TensorFlow/Keras not installed; install tensorflow and keras to use predict_new_entity()"
+            )
         new_entity = tf.sparse.reorder(entity)
         new_entity = tf.sparse.to_dense(new_entity)
 

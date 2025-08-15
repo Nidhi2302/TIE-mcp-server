@@ -1,5 +1,6 @@
+from typing import Any
+
 import numpy as np
-import tensorflow as tf
 from sklearn.metrics import mean_squared_error
 
 from .recommender import Recommender
@@ -99,10 +100,29 @@ class TopItemsRecommender(Recommender):
         self._checkrep()
         return scaled_ranks
 
-    def fit(self, data: tf.SparseTensor, **kwargs):
-        technique_matrix: np.ndarray = tf.sparse.to_dense(
-            tf.sparse.reorder(data)
-        ).numpy()
+    def fit(self, data: Any, **kwargs):
+        """Fit by computing item frequency ranks.
+
+        Accepts either:
+          - A TensorFlow SparseTensor (if tensorflow installed)
+          - A dense numpy ndarray of shape (m, n)
+        """
+        if hasattr(data, "indices"):  # likely a TF sparse tensor
+            try:  # pragma: no cover - optional dependency
+                import tensorflow as tf  # type: ignore
+                technique_matrix: np.ndarray = tf.sparse.to_dense(
+                    tf.sparse.reorder(data)
+                ).numpy()
+            except Exception as e:  # pragma: no cover
+                raise ImportError(
+                    "TensorFlow required to pass a SparseTensor to TopItemsRecommender.fit()"
+                ) from e
+        else:
+            if not isinstance(data, np.ndarray):
+                raise TypeError(
+                    "data must be a TensorFlow SparseTensor or a numpy ndarray"
+                )
+            technique_matrix = data
 
         technique_frequency = technique_matrix.sum(axis=0)
         if technique_frequency.shape != (self._n,):
@@ -116,15 +136,35 @@ class TopItemsRecommender(Recommender):
         self._item_frequencies = ranks
         self._checkrep()
 
-    def evaluate(self, test_data: tf.SparseTensor, **kwargs) -> float:
+    def evaluate(self, test_data: Any, **kwargs) -> float:
+        """Evaluate using MSE against observed entries in test_data.
+
+        test_data may be:
+          - TensorFlow SparseTensor
+          - numpy ndarray (dense) of shape (m, n)
+        """
         predictions_matrix = self.predict()
 
-        row_indices = tuple(index[0] for index in test_data.indices)
-        column_indices = tuple(index[1] for index in test_data.indices)
-        prediction_values = predictions_matrix[row_indices, column_indices]
+        if hasattr(test_data, "indices"):
+            td = test_data
+            row_indices = tuple(index[0] for index in td.indices)
+            column_indices = tuple(index[1] for index in td.indices)
+            prediction_values = predictions_matrix[row_indices, column_indices]
+            values = td.values
+        else:
+            if not isinstance(test_data, np.ndarray):
+                raise TypeError(
+                    "test_data must be a TensorFlow SparseTensor or a numpy ndarray"
+                )
+            if test_data.shape != (self._m, self._n):
+                raise ValueError(
+                    f"test_data shape mismatch: expected {(self._m, self._n)}, got {test_data.shape}"
+                )
+            prediction_values = predictions_matrix[test_data > 0]
+            values = test_data[test_data > 0]
 
         self._checkrep()
-        return mean_squared_error(test_data.values, prediction_values)
+        return mean_squared_error(values, prediction_values)
 
     def predict(self, **kwargs) -> np.ndarray:
         scaled_ranks = self._scale_item_frequency(self._item_frequencies)
@@ -139,6 +179,7 @@ class TopItemsRecommender(Recommender):
         self._checkrep()
         return matrix
 
-    def predict_new_entity(self, entity: tf.SparseTensor, **kwargs) -> np.array:
+    def predict_new_entity(self, entity: Any, **kwargs) -> np.array:
+        """Predict scores for a new entity (identical ranking)."""
         self._checkrep()
         return self._scale_item_frequency(self._item_frequencies)
