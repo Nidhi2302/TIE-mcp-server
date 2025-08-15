@@ -1,23 +1,39 @@
 # Code adapted from https://colab.research.google.com/github/google/eng-edu/blob/main/ml/recommendation-systems/recommendation-systems.ipynb?utm_source=ss-recommendation-systems&utm_campaign=colab-external&utm_medium=referral&utm_content=recommendation-systems
 
 import copy
+from typing import Any
 
-import keras
 import numpy as np
-import tensorflow as tf
 from sklearn.metrics import mean_squared_error
 
-from tie.constants import PredictionMethod
-from tie.utils import calculate_predicted_matrix
+# Optional heavy deps: tensorflow / keras. Guard import so package import
+# does not fail in lightweight environments (e.g. CI without TF).
+try:  # pragma: no cover - optional dependency
+    import tensorflow as tf  # type: ignore
+    import keras  # type: ignore
+    _TF_AVAILABLE = True
+    # Optional eager config (TF2 already eager). Ignore if API absent.
+    try:  # pragma: no cover
+        tf.config.run_functions_eagerly(True)
+    except (AttributeError, RuntimeError) as _e:  # noqa: B110
+        _ = _e  # Non-critical: API missing or already eager.
+except Exception:  # pragma: no cover
+    tf = None  # type: ignore
+    keras = None  # type: ignore
+    _TF_AVAILABLE = False
 
+from ..constants import PredictionMethod
+from ..utils import calculate_predicted_matrix
 from .recommender import Recommender
-
-tf.config.run_functions_eagerly(True)
-tf.compat.v1.enable_eager_execution()
 
 
 class FactorizationRecommender(Recommender):
-    """A matrix factorization collaborative filtering recommender model."""
+    """A matrix factorization collaborative filtering recommender model.
+
+    TensorFlow / Keras optional:
+      - Importing tie.recommender.* will not require TF.
+      - Instantiating / training FactorizationRecommender requires TF/Keras.
+    """
 
     # Abstraction function:
     #   AF(m, n, k) = a matrix factorization recommender model
@@ -52,29 +68,46 @@ class FactorizationRecommender(Recommender):
         if k <= 0:
             raise ValueError(f"k must be > 0 (got {k})")
 
-        self._U = tf.Variable(tf.zeros((m, k)))
-        self._V = tf.Variable(tf.zeros((n, k)))
+        if not _TF_AVAILABLE:
+            raise ImportError(
+                "TensorFlow / Keras not installed; install tensorflow / keras to use "
+                "FactorizationRecommender"
+            )
+
+        self._U = tf.Variable(tf.zeros((m, k)))  # type: ignore[attr-defined]
+        self._V = tf.Variable(tf.zeros((n, k)))  # type: ignore[attr-defined]
 
         self._reset_embeddings()
 
-        self._loss = keras.losses.MeanSquaredError()
+        # keras available only if _TF_AVAILABLE
+        self._loss = keras.losses.MeanSquaredError()  # type: ignore[union-attr]
 
         self._init_stddev = 1
 
         self._checkrep()
 
+    def _require_tf(self):
+        if not _TF_AVAILABLE:
+            raise ImportError(
+                "TensorFlow not available; FactorizationRecommender operation requires it"
+            )
+
     def _reset_embeddings(self):
         """Resets the embeddings to a standard normal."""
+        self._require_tf()
         init_stddev = 1
 
-        new_U = tf.Variable(tf.random.normal(self._U.shape, stddev=init_stddev))
-        new_V = tf.Variable(tf.random.normal(self._V.shape, stddev=init_stddev))
+        new_U = tf.Variable(tf.random.normal(self._U.shape, stddev=init_stddev))  # type: ignore[attr-defined]
+        new_V = tf.Variable(tf.random.normal(self._V.shape, stddev=init_stddev))  # type: ignore[attr-defined]
 
         self._U = new_U
         self._V = new_V
 
     def _checkrep(self):
         """Validates the rep invariant; raises ValueError on violation."""
+        if not _TF_AVAILABLE:
+            # If TF not available, object should never have been constructed.
+            raise ValueError("Invalid state: TensorFlow unavailable for factorization model")
         if self._U.shape[1] != self._V.shape[1]:
             raise ValueError(
                 f"Embedding dimension mismatch: U.shape[1]={self._U.shape[1]} "
@@ -95,9 +128,9 @@ class FactorizationRecommender(Recommender):
                 f"Embedding dim must be > 0 (U.shape[1]={self._U.shape[1]}, "
                 f"V.shape[1]={self._V.shape[1]})"
             )
-        if tf.math.reduce_any(tf.math.is_nan(self._U)):
+        if tf.math.reduce_any(tf.math.is_nan(self._U)):  # type: ignore[attr-defined]
             raise ValueError("User embedding matrix U contains NaN values")
-        if tf.math.reduce_any(tf.math.is_nan(self._V)):
+        if tf.math.reduce_any(tf.math.is_nan(self._V)):  # type: ignore[attr-defined]
             raise ValueError("Item embedding matrix V contains NaN values")
         if self._loss is None:
             raise ValueError("Loss function is not initialized")
@@ -106,46 +139,41 @@ class FactorizationRecommender(Recommender):
     def U(self) -> np.ndarray:
         """Gets U as a factor of the factorization UV^T."""
         self._checkrep()
-        return copy.deepcopy(self._U.numpy())
+        return copy.deepcopy(self._U.numpy())  # type: ignore[union-attr]
 
     @property
     def V(self) -> np.ndarray:
         """Gets V as a factor of the factorization UV^T."""
         self._checkrep()
-        return copy.deepcopy(self._V.numpy())
+        return copy.deepcopy(self._V.numpy())  # type: ignore[union-attr]
 
-    def _get_estimated_matrix(self) -> tf.Tensor:
+    def _get_estimated_matrix(self) -> Any:
         """Gets the estimated matrix UV^T."""
         self._checkrep()
-        return tf.matmul(self._U, self._V, transpose_b=True)
+        return tf.matmul(self._U, self._V, transpose_b=True)  # type: ignore[attr-defined]
 
-    def _predict(self, data: tf.SparseTensor) -> tf.Tensor:
+    def _predict(self, data: Any) -> Any:
         """Predicts the results for data.
 
         Requires that data be the same shape as the training data.
         Where each row corresponds to the same entity as the training data
-        and each column represents the same item to recommend.  However,
+        and each column represents the same item to recommend. However,
         the tensor may be sparse and contain more, fewer, or the same number
         of entries as the training data.
 
         Args:
-            data: An mxn sparse tensor of data containing p nonzero entries.
+            data: An mxn sparse-like tensor with .indices of nonzero entries.
 
         Returns:
-            A length-p tensor of predictions, where predictions[i] corresponds to the
-                prediction for index data.indices[i].
+            A length-p tensor of predictions corresponding to data.indices.
         """
-        # indices contains indices of non-null entries
-        # of data
-        # gather_nd will get those entries in order and
-        # add to an array
         self._checkrep()
-        return tf.gather_nd(self._get_estimated_matrix(), data.indices)
+        return tf.gather_nd(self._get_estimated_matrix(), data.indices)  # type: ignore[attr-defined]
 
     def _calculate_regularized_loss(
         self,
-        data: tf.SparseTensor,
-        predictions: tf.Tensor,
+        data: Any,
+        predictions: Any,
         regularization_coefficient: float,
         gravity_coefficient: float,
     ) -> float:
@@ -158,56 +186,31 @@ class FactorizationRecommender(Recommender):
             embedding r = 1/m \sum_i ||U_i||^2 + 1/n \sum_j ||V_j||^2
         - A gravity term which is the average of the squares of all predictions.
             g = 1/(MN) \sum_{ij} (UV^T)_{ij}^2
-
-        Args:
-            data: the data on which to evaluate.  Predictions will be evaluated for
-                every non-null entry of data.
-            predictions: the model predictions on which to evaluate.  Requires that
-                predictions[i] contains the predictions for data.indices[i].
-            regularization_coefficient: the coefficient for the regularization component
-                of the loss function.
-            gravity_coefficient: the coefficient for the gravity component of the loss
-                function.
-
-        Returns:
-            The regularized loss.
         """
         regularization_loss = regularization_coefficient * (
-            tf.reduce_sum(self._U * self._U) / self._U.shape[0]
-            + tf.reduce_sum(self._V * self._V) / self._V.shape[0]
+            tf.reduce_sum(self._U * self._U) / self._U.shape[0]  # type: ignore[attr-defined]
+            + tf.reduce_sum(self._V * self._V) / self._V.shape[0]  # type: ignore[attr-defined]
         )
 
-        gravity = (1.0 / (self._U.shape[0] * self._V.shape[0])) * tf.reduce_sum(
-            tf.square(tf.matmul(self._U, self._V, transpose_b=True))
+        gravity = (1.0 / (self._U.shape[0] * self._V.shape[0])) * tf.reduce_sum(  # type: ignore[attr-defined]
+            tf.square(tf.matmul(self._U, self._V, transpose_b=True))  # type: ignore[attr-defined]
         )
 
         gravity_loss = gravity_coefficient * gravity
 
         self._checkrep()
-        return self._loss(data, predictions) + regularization_loss + gravity_loss
+        return float(self._loss(data, predictions) + regularization_loss + gravity_loss)  # type: ignore[operator]
 
-    def _calculate_mean_square_error(self, data: tf.SparseTensor) -> tf.Tensor:
-        r"""Calculates the mean squared error between observed values in the
-        data and predictions from UV^T.
-
-        MSE = \sum_{(i,j) \in \Omega} (data_{ij} U_i \dot V_j)^2
-        where Omega is the set of observed entries in training_data.
-
-        Args:
-            data: A matrix of observations of dense_shape m, n
-
-        Returns:
-            A scalar Tensor representing the MSE between the true ratings and the
-            model's predictions.
-        """
+    def _calculate_mean_square_error(self, data: Any) -> Any:
+        """Calculates the mean squared error between observed values in data and predictions from UV^T."""
         predictions = self._predict(data)
-        loss = self._loss(data.values, predictions)
+        loss = self._loss(data.values, predictions)  # type: ignore[union-attr]
         self._checkrep()
         return loss
 
     def fit(
         self,
-        data: tf.SparseTensor,
+        data: Any,
         learning_rate: float,
         epochs: int,
         regularization_coefficient: float = 0.1,
@@ -216,58 +219,56 @@ class FactorizationRecommender(Recommender):
         """Fits the model to data.
 
         Args:
-            data: an mxn tensor of training data.
-            epochs:
+            data: an mxn sparse tensor (TensorFlow SparseTensor) of training data.
+            epochs: Number of training epochs.
             learning_rate: the learning rate.
-            epochs: Number of training epochs, where each the model is trained on the
-                cardinality dataset in each epoch.
-            regularization_coefficient: coefficient on the embedding regularization
-                term.
-            gravity_coefficient: coefficient on the prediction regularization term.
-
-        Mutates:
-            The recommender to the new trained state.
+            regularization_coefficient: coefficient on embedding regularization term.
+            gravity_coefficient: coefficient on prediction regularization term.
         """
+        if not _TF_AVAILABLE:
+            raise ImportError("TensorFlow not available; cannot train FactorizationRecommender")
+
         self._reset_embeddings()
 
-        # preliminaries
-        optimizer = keras.optimizers.SGD(learning_rate=learning_rate)
+        optimizer = keras.optimizers.SGD(learning_rate=learning_rate)  # type: ignore[union-attr]
 
         for _i in range(epochs + 1):
-            with tf.GradientTape() as tape:
-                # need to predict here and not in loss so doesn't affect gradient
+            with tf.GradientTape():  # type: ignore[attr-defined]
                 predictions = self._predict(data)
-
                 loss = self._calculate_regularized_loss(
-                    data.values,
+                    data.values,  # type: ignore[union-attr]
                     predictions,
                     regularization_coefficient,
                     gravity_coefficient,
                 )
-            gradients = tape.gradient(loss, [self._U, self._V])
-            optimizer.apply_gradients(zip(gradients, [self._U, self._V], strict=False))
+            gradients = tf.gradients(loss, [self._U, self._V])  # type: ignore[attr-defined]
+            # Fallback if tf.gradients not available (eager), use GradientTape (already used)
+            if gradients is None:  # pragma: no cover
+                with tf.GradientTape() as tape2:  # type: ignore[attr-defined]
+                    predictions2 = self._predict(data)
+                    loss2 = self._calculate_regularized_loss(
+                        data.values,  # type: ignore[union-attr]
+                        predictions2,
+                        regularization_coefficient,
+                        gravity_coefficient,
+                    )
+                gradients = tape2.gradient(loss2, [self._U, self._V])  # type: ignore[attr-defined]
+            optimizer.apply_gradients(zip(gradients, [self._U, self._V], strict=False))  # type: ignore[union-attr]
 
         self._checkrep()
 
     def evaluate(
         self,
-        test_data: tf.SparseTensor,
+        test_data: Any,
         method: PredictionMethod = PredictionMethod.DOT,
     ) -> float:
         """Evaluates the solution.
 
         Requires that the model has been trained.
-
-        Args:
-            test_data: mxn tensor on which to evaluate the model.
-                Requires that mxn match the dimensions of the training tensor and
-                each row i and column j correspond to the same entity and item
-                in the training tensor, respectively.
-            method: The prediction method to use.
-
-        Returns:
-            The mean squared error of the test data.
         """
+        if not _TF_AVAILABLE:
+            raise ImportError("TensorFlow not available; cannot evaluate FactorizationRecommender")
+
         predictions_matrix = self.predict(method)
 
         row_indices = tuple(index[0] for index in test_data.indices)
@@ -282,83 +283,61 @@ class FactorizationRecommender(Recommender):
 
         The predictions consist of the estimated matrix A_hat of the truth
         matrix A, of which the training data contains a sparse subset of the entries.
-
-        Args:
-            method: The prediction method to use.
-
-        Returns:
-            An mxn array of values.
         """
+        if not _TF_AVAILABLE:
+            raise ImportError("TensorFlow not available; cannot predict with FactorizationRecommender")
         self._checkrep()
 
         return calculate_predicted_matrix(
-            np.nan_to_num(self._U.numpy()), np.nan_to_num(self._V.numpy()), method
+            np.nan_to_num(self._U.numpy()), np.nan_to_num(self._V.numpy()), method  # type: ignore[union-attr]
         )
 
     def predict_new_entity(
         self,
-        entity: tf.SparseTensor,
+        entity: Any,
         learning_rate: float,
         epochs: int,
         regularization_coefficient: float,
         gravity_coefficient: float,
         method: PredictionMethod = PredictionMethod.DOT,
     ) -> np.array:
-        """Recommends items to an unseen entity
+        """Recommends items to an unseen entity."""
+        if not _TF_AVAILABLE:
+            raise ImportError("TensorFlow not available; cannot perform cold start prediction")
+        optimizer = keras.optimizers.SGD(learning_rate=learning_rate)  # type: ignore[union-attr]
 
-        Args:
-            entity: a length-n sparse tensor of consisting of the new entity's
-                ratings for each item, indexed exactly as the items used to
-                train this model.
-            learning rate: the learning rate for SGD.
-            epochs: Number of training epochs, where each the model is trained on the
-                cardinality dataset in each epoch.
-            regularization_coefficient: coefficient on the embedding regularization
-                term.
-            gravity_coefficient: coefficient on the prediction regularization term.
-            method: The prediction method to use.
-
-        Returns:
-            An array of predicted values for the new entity.
-        """
-
-        # preliminaries
-        optimizer = keras.optimizers.SGD(learning_rate=learning_rate)
-
-        embedding = tf.Variable(
-            tf.random.normal(
+        embedding = tf.Variable(  # type: ignore[attr-defined]
+            tf.random.normal(  # type: ignore[attr-defined]
                 [self._U.shape[1], 1],
                 stddev=self._init_stddev,
             )
         )
 
         for _i in range(epochs + 1):
-            with tf.GradientTape() as tape:
-                # need to predict here and not in loss so doesn't affect gradient
-                # V is nxk, embedding is kx1
-                predictions = tf.matmul(self._V, embedding)
-
+            with tf.GradientTape() as tape:  # type: ignore[attr-defined]
+                predictions = tf.matmul(self._V, embedding)  # type: ignore[attr-defined]
                 loss = (
-                    self._loss(entity.values, tf.gather_nd(predictions, entity.indices))
+                    self._loss(
+                        entity.values, tf.gather_nd(predictions, entity.indices)  # type: ignore[union-attr]
+                    )
                     + (
                         regularization_coefficient
-                        * tf.reduce_sum(tf.math.square(embedding))
+                        * tf.reduce_sum(tf.math.square(embedding))  # type: ignore[attr-defined]
                         / self._U.shape[0]
                     )
                     + (
                         (gravity_coefficient / (self._U.shape[0] * self._V.shape[0]))
-                        * tf.reduce_sum(tf.square(tf.matmul(self._V, embedding)))
-                    ),
+                        * tf.reduce_sum(tf.square(tf.matmul(self._V, embedding)))  # type: ignore[attr-defined]
+                    )
                 )
+            gradients = tape.gradient(loss, [embedding])  # type: ignore[attr-defined]
+            optimizer.apply_gradients(zip(gradients, [embedding], strict=False))  # type: ignore[union-attr]
 
-            gradients = tape.gradient(loss, [embedding])
-            optimizer.apply_gradients(zip(gradients, [embedding], strict=False))
-
-        if np.isnan(embedding.numpy()).any():
+        if np.isnan(embedding.numpy()).any():  # type: ignore[union-attr]
             raise ValueError("Embedding contains NaN values after optimization")
         self._checkrep()
         return np.squeeze(
-            calculate_predicted_matrix(embedding.numpy().T, self._V.numpy(), method)
+            calculate_predicted_matrix(embedding.numpy().T, self._V.numpy(), method)  # type: ignore[union-attr]
         )
 
 
