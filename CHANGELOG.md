@@ -1,76 +1,47 @@
 # Changelog
 
-All notable changes to the TIE MCP Server project will be documented in this file.
+All notable changes to this project will be documented in this file.
 
-The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
-and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+The format is based on Keep a Changelog (https://keepachangelog.com/en/1.1.0/)
+and this project adheres to Semantic Versioning where practical.
 
 ## [Unreleased]
 
+### Planned
+- Multi-version CI matrix validation refinements (Python 3.10–3.13).
+- Additional unit tests for optional TensorFlow / implicit code paths to raise coverage.
+
+### Pending Documentation
+- Expanded testing strategy section.
+
+## [0.3.0] - 2025-08-15
+
 ### Added
-- Initial project structure
-- MCP server implementation for MITRE ATT&CK technique prediction
-- Support for multiple recommendation algorithms (WALS, BPR, Matrix Factorization)
-- Real-time prediction capabilities
-- Comprehensive test suite
-- Docker support with multi-stage builds
-- CI/CD pipeline with GitHub Actions
-- Performance testing framework
-- Security scanning with Trivy
-- Documentation generation
+- Optional dependency guards for TensorFlow, Keras, and implicit recommenders; modules import cleanly without heavy deps.
+- Test wrapper server class introduced for MCP tooling exposure in [server.py](src/tie_mcp/server.py).
+- Conditional recommender exposure logic in [recommender/__init__.py](src/tie_mcp/core/tie/recommender/__init__.py).
 
 ### Changed
-- N/A
-
-### Deprecated
-- N/A
-
-### Removed
-- N/A
+- Refactored factorization recommender to remove nested bare except/pass blocks (Bandit B110) in [factorization_recommender.py](src/tie_mcp/core/tie/recommender/factorization_recommender.py).
+- Renamed SQLAlchemy Dataset.metadata attribute to extra_metadata while preserving DB column name "metadata" in [database.py](src/tie_mcp/storage/database.py).
+- Relaxed type annotations (use of Any) to avoid hard TensorFlow import-time requirements across recommender modules.
 
 ### Fixed
-- N/A
+- Import-time crashes when TensorFlow / implicit not installed.
+- Bandit B110 issues in factorization recommender.
+- SQLAlchemy reserved attribute error for metadata attribute.
 
 ### Security
-- Added security scanning to CI/CD pipeline
-- Implemented secure configuration management
+- Eliminated silent exception swallowing in factorization recommender initialization.
 
-## [1.0.0] - TBD
-
-### Added
-- Initial release of TIE MCP Server
-- Core prediction engine
-- MCP protocol implementation
-- Basic documentation and examples
-
----
-
-## Release Notes Template
-
-When releasing a new version, use this template:
-
-```markdown
-## [X.Y.Z] - YYYY-MM-DD
+## [0.2.0] - 2025-08-10
 
 ### Added
-- New features
+- Documentation restructuring and architecture diagrams in [README.md](README.md).
 
 ### Changed
-- Changes in existing functionality
+- Updated Ruff version and formatting project-wide.
 
-### Deprecated
-- Soon-to-be removed features
-
-### Removed
-- Now removed features
-
-### Fixed
-- Bug fixes
-
-### Security
-- Security fixes and improvements
-```
-
-## Contributing
-
-See [CONTRIBUTING.md](CONTRIBUTING.md) for information about how to contribute to this project.
+## [0.1.0] - 2025-08-01
+### Added
+- Initial project structure, core TIE MCP components, recommender abstractions.
