@@ -5,13 +5,13 @@ Exports key settings classes and the global settings instance for convenient imp
 """
 
 from .settings import (
-    Settings,
-    settings,
     Environment,
     LogLevel,
+    ModelSettings,
     ModelType,
     PredictionMethod,
-    ModelSettings,
+    Settings,
+    settings,
 )
 
 __all__ = [
