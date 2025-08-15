@@ -6,20 +6,17 @@ import asyncio
 import logging
 from typing import Any
 
-from ..api.schemas import (
+from tie_mcp.api.schemas import (
     AttackTechniqueInfo,
     ModelEvaluationResponse,
     PredictionResponse,
     TrainingResponse,
 )
-from ..config.settings import settings
-from ..models.model_manager import ModelManager
-from ..monitoring.metrics import MetricsCollector
-from ..utils.async_utils import run_in_thread
-from .tie.constants import PredictionMethod
-from .tie.engine import TechniqueInferenceEngine
-from .tie.matrix_builder import ReportTechniqueMatrixBuilder
-from .tie.recommender import (
+from tie_mcp.config.settings import settings
+from tie_mcp.core.tie.constants import PredictionMethod
+from tie_mcp.core.tie.engine import TechniqueInferenceEngine
+from tie_mcp.core.tie.matrix_builder import ReportTechniqueMatrixBuilder
+from tie_mcp.core.tie.recommender import (
     BPRRecommender,
     FactorizationRecommender,
     ImplicitBPRRecommender,
@@ -27,7 +24,10 @@ from .tie.recommender import (
     TopItemsRecommender,
     WalsRecommender,
 )
-from .tie.utils import get_mitre_technique_ids_to_names
+from tie_mcp.core.tie.utils import get_mitre_technique_ids_to_names
+from tie_mcp.models.model_manager import ModelManager
+from tie_mcp.monitoring.metrics import MetricsCollector
+from tie_mcp.utils.async_utils import run_in_thread
 
 logger = logging.getLogger(__name__)
 
