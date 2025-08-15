@@ -1,7 +1,10 @@
 from abc import ABC, abstractmethod
+from typing import Any
 
 import numpy as np
-import tensorflow as tf
+
+# TensorFlow is optional. Concrete implementations should guard their own TF usage.
+# We intentionally avoid importing tensorflow here to keep base class lightweight.
 
 
 class Recommender(ABC):
@@ -20,7 +23,7 @@ class Recommender(ABC):
     @abstractmethod
     def fit(
         self,
-        data: tf.SparseTensor,
+        data: Any,
         **kwargs,
     ):
         """Fits the model to data.
@@ -33,7 +36,7 @@ class Recommender(ABC):
         """
 
     @abstractmethod
-    def evaluate(self, test_data: tf.SparseTensor, **kwargs) -> float:
+    def evaluate(self, test_data: Any, **kwargs) -> float:
         """Evaluates the solution.
 
         Requires that the model has been trained.
@@ -62,7 +65,7 @@ class Recommender(ABC):
     @abstractmethod
     def predict_new_entity(
         self,
-        entity: tf.SparseTensor,
+        entity: Any,
         **kwargs,
     ) -> np.array:
         """Recommends items to an unseen entity.

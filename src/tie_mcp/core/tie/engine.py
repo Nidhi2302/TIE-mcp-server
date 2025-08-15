@@ -9,11 +9,11 @@ try:  # pragma: no cover - optional dependency
 except Exception:  # pragma: no cover
     tf = None  # type: ignore
 
-from tie.constants import PredictionMethod
-from tie.exceptions import TechniqueNotFoundException
-from tie.matrix import ReportTechniqueMatrix
-from tie.recommender import Recommender
-from tie.utils import (
+from .constants import PredictionMethod
+from .exceptions import TechniqueNotFoundException
+from .matrix import ReportTechniqueMatrix
+from .recommender import Recommender
+from .utils import (
     get_mitre_technique_ids_to_names,
     normalized_discounted_cumulative_gain,
     precision_at_k,
@@ -131,19 +131,19 @@ class TechniqueInferenceEngine:
 
     def fit(self, **kwargs) -> float:
         """Fit the model to the data.
-    
+
         Kwargs: Model specific args.
-    
+
         Returns:
             The MSE of the prediction matrix, as determined by the test set.
         """
         self._require_tf()
         self._model.fit(self._training_data.to_sparse_tensor(), **kwargs)
-    
+
         mean_squared_error = self._model.evaluate(
             self._test_data.to_sparse_tensor(), method=self._prediction_method
         )
-    
+
         self._checkrep()
         return mean_squared_error
 
@@ -279,12 +279,12 @@ class TechniqueInferenceEngine:
 
     def predict(self) -> pd.DataFrame:
         """Obtains model predictions.
-    
+
         For each report, predicts a value for every technique based on the likelihood
         that technique should be featured in the report.  A higher predicted value for
         technique a than technique b represents an inference that technique a is more
         likely in the report than technique b.
-    
+
         Returns:
             A dataframe with the same shape, index, and columns as training_data and
             test_data containing the predictions values for each report and technique
@@ -292,13 +292,13 @@ class TechniqueInferenceEngine:
         """
         self._require_tf()
         predictions = self._model.predict(method=self._prediction_method)
-    
+
         predictions_dataframe = pd.DataFrame(
             predictions,
             index=self._training_data.report_ids,
             columns=self._training_data.technique_ids,
         )
-    
+
         self._checkrep()
         return predictions_dataframe
 
@@ -339,11 +339,11 @@ class TechniqueInferenceEngine:
         self, techniques: frozenset[str], **kwargs
     ) -> pd.DataFrame:
         """Predicts for a new, yet-unseen report.
-    
+
         Args:
             techniques: an iterable of MITRE technique identifiers involved
                 in the new report.
-    
+
         Returns:
             A length n dataframe indexed by technique id containing the following
             columns:
@@ -358,7 +358,7 @@ class TechniqueInferenceEngine:
         technique_ids_to_indices = {
             all_technique_ids[i]: i for i in range(len(all_technique_ids))
         }
-    
+
         technique_indices = set()
         for technique in techniques:
             if technique in technique_ids_to_indices:
@@ -367,22 +367,22 @@ class TechniqueInferenceEngine:
                 raise TechniqueNotFoundException(
                     f"Model has not been trained on {technique}."
                 )
-    
+
         technique_indices = list(technique_indices)
         technique_indices.sort()
         technique_indices_2d = np.expand_dims(np.array(technique_indices), axis=1)
-    
+
         values = np.ones((len(technique_indices),))
         n = self._training_data.n
-    
+
         technique_tensor = tf.SparseTensor(
             indices=technique_indices_2d, values=values, dense_shape=(n,)
         )
-    
+
         predictions = self._model.predict_new_entity(
             technique_tensor, method=self._prediction_method, **kwargs
         )
-    
+
         training_indices_dense = np.zeros(len(predictions))
         training_indices_dense[technique_indices] = 1
         result_dataframe = pd.DataFrame(
@@ -393,9 +393,9 @@ class TechniqueInferenceEngine:
             },
             index=all_technique_ids,
         )
-    
+
         self._add_technique_name_to_dataframe(result_dataframe)
-    
+
         self._checkrep()
         return result_dataframe
 

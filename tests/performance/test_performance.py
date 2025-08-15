@@ -3,19 +3,19 @@
 Performance tests for TIE MCP Server - Simplified version
 """
 
-import time
 import importlib.util
+import time
 
 import pytest
-
-# Skip performance tests gracefully when TensorFlow is not installed (optional dependency)
-_tf_missing = importlib.util.find_spec("tensorflow") is None
-pytestmark = pytest.mark.skipif(_tf_missing, reason="tensorflow not installed")
 
 from tie_mcp.core.tie.constants import PredictionMethod
 from tie_mcp.core.tie.engine import TechniqueInferenceEngine
 from tie_mcp.core.tie.matrix_builder import ReportTechniqueMatrixBuilder
 from tie_mcp.core.tie.recommender import WalsRecommender
+
+# Skip performance tests gracefully when TensorFlow is not installed
+_tf_missing = importlib.util.find_spec("tensorflow") is None
+pytestmark = pytest.mark.skipif(_tf_missing, reason="tensorflow not installed")
 
 
 @pytest.mark.performance

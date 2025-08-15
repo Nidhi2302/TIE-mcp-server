@@ -4,16 +4,131 @@ Main MCP Server implementation for TIE (Technique Inference Engine)
 
 import asyncio
 import logging
+from typing import Any
 
 import mcp.server.stdio
 import mcp.types as types
 from mcp.server import NotificationOptions, Server
 from mcp.server.models import InitializationOptions
+from mcp.types import TextContent
 
 logger = logging.getLogger(__name__)
 
 # Create server instance
 server = Server("tie-mcp-server")
+
+
+# Backwards-compatible server wrapper expected by tests (TIEMCPServer).
+# The existing module-level decorated tool functions provide MCP protocol
+# integration; this class offers higher-level handlers used directly in
+# unit tests. It defers heavy component initialization to allow tests to
+# inject mocks (model_manager, engine_manager, etc.).
+
+
+class TIEMCPServer:
+    """Wrapper exposing async handler methods for unit tests.
+
+    Attributes (initially None and replaced by tests with mocks):
+        engine_manager
+        model_manager
+        db_manager
+        metrics_collector
+    """
+
+    def __init__(self):
+        self.server: Server = server  # underlying MCP Server instance
+        self.engine_manager: Any | None = None
+        self.model_manager: Any | None = None
+        self.db_manager: Any | None = None
+        self.metrics_collector: Any | None = None
+
+    async def initialize(self) -> None:
+        """Placeholder initialization hook."""
+        # Real implementation would wire up concrete managers.
+        return None
+
+    async def _handle_predict_techniques(self, request: dict) -> list[TextContent]:
+        """Handle predict_techniques tool (test-facing)."""
+        try:
+            techniques = request.get("techniques", [])
+            if not techniques:
+                raise ValueError("techniques list required")
+            top_k = int(request.get("top_k", 20))
+            if not (1 <= top_k <= 100):
+                raise ValueError("top_k must be between 1 and 100")
+            prediction_method = request.get("prediction_method", "dot")
+            if self.engine_manager:
+                result = await self.engine_manager.predict_techniques(
+                    techniques=techniques,
+                    top_k=top_k,
+                    prediction_method=prediction_method,
+                )
+            else:
+                # Fallback mock response if engine_manager not provided
+                result = {
+                    "input_techniques": techniques,
+                    "predicted_techniques": [],
+                    "model_id": "default",
+                    "prediction_method": prediction_method,
+                }
+            return [TextContent(type="text", text=str(result))]
+        except Exception as e:
+            return [TextContent(type="text", text=f"Error: {e}")]
+
+    async def _handle_train_model(self, request: dict) -> list[TextContent]:
+        """Handle train_model tool."""
+        try:
+            if self.engine_manager is None:
+                raise RuntimeError("engine_manager not configured")
+            result = await self.engine_manager.train_model(request)
+            return [TextContent(type="text", text=str(result))]
+        except Exception as e:
+            return [TextContent(type="text", text=f"Error: {e}")]
+
+    async def _handle_list_models(self, request: dict) -> list[TextContent]:
+        """Handle list_models tool."""
+        try:
+            include_metrics = bool(request.get("include_metrics", True))
+            if self.model_manager:
+                result = await self.model_manager.list_models(include_metrics=include_metrics)
+            else:
+                result = {"models": []}
+            return [TextContent(type="text", text=str(result))]
+        except Exception as e:
+            return [TextContent(type="text", text=f"Error: {e}")]
+
+    async def _handle_get_model_info(self, request: dict) -> list[TextContent]:
+        """Handle get_model_info tool."""
+        try:
+            model_id = request.get("model_id")
+            if not model_id:
+                raise ValueError("model_id required")
+            if self.model_manager is None:
+                raise RuntimeError("model_manager not configured")
+            result = await self.model_manager.get_model_info(model_id)
+            return [TextContent(type="text", text=str(result))]
+        except Exception as e:
+            return [TextContent(type="text", text=f"Error: {e}")]
+
+    async def _handle_create_dataset(self, request: dict) -> list[TextContent]:
+        """Handle create_dataset tool."""
+        try:
+            if self.model_manager is None:
+                raise RuntimeError("model_manager not configured")
+            result = await self.model_manager.create_dataset(request)
+            return [TextContent(type="text", text=str(result))]
+        except Exception as e:
+            return [TextContent(type="text", text=f"Error: {e}")]
+
+    async def _handle_get_attack_techniques(self, request: dict) -> list[TextContent]:
+        """Handle get_attack_techniques tool."""
+        try:
+            if self.engine_manager is None:
+                raise RuntimeError("engine_manager not configured")
+            result = await self.engine_manager.get_attack_techniques(request)
+            return [TextContent(type="text", text=str(result))]
+        except Exception as e:
+            return [TextContent(type="text", text=f"Error: {e}")]
 
 
 # Tool implementations

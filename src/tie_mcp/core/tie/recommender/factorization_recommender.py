@@ -6,16 +6,16 @@ from typing import Any
 import numpy as np
 from sklearn.metrics import mean_squared_error
 
-# Optional heavy deps: tensorflow / keras. Guard import so package import
+# Optional heavy deps: keras / tensorflow. Guard import so package import
 # does not fail in lightweight environments (e.g. CI without TF).
 try:  # pragma: no cover - optional dependency
-    import tensorflow as tf  # type: ignore
     import keras  # type: ignore
+    import tensorflow as tf  # type: ignore
     _TF_AVAILABLE = True
     # Optional eager config (TF2 already eager). Ignore if API absent.
     try:  # pragma: no cover
         tf.config.run_functions_eagerly(True)
-    except (AttributeError, RuntimeError) as _e:  # noqa: B110
+    except (AttributeError, RuntimeError) as _e:
         _ = _e  # Non-critical: API missing or already eager.
 except Exception:  # pragma: no cover
     tf = None  # type: ignore

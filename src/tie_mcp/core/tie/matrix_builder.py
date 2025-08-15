@@ -2,8 +2,8 @@ import json
 import math
 import random
 
-from tie.matrix import ReportTechniqueMatrix
-from tie.utils import get_mitre_technique_ids_to_names
+from .matrix import ReportTechniqueMatrix
+from .utils import get_mitre_technique_ids_to_names
 
 # Use SystemRandom for sampling to satisfy Bandit B311 (insecure usage of random)
 _secure_random = random.SystemRandom()

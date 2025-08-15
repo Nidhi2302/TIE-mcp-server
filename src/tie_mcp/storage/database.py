@@ -61,7 +61,12 @@ class Model(Base):
 
 
 class Dataset(Base):
-    """Database model for storing dataset information"""
+    """Database model for storing dataset information.
+
+    NOTE: Attribute name 'metadata' is reserved by SQLAlchemy's Declarative API.
+    We use the attribute 'extra_metadata' mapped to column name 'metadata' to avoid
+    a naming collision while preserving the DB column name and external dictionary key.
+    """
 
     __tablename__ = "datasets"
 
@@ -73,7 +78,9 @@ class Dataset(Base):
     file_path: Mapped[str] = mapped_column(String(500), nullable=False)
     num_reports: Mapped[int] = mapped_column(Integer, nullable=False)
     num_techniques: Mapped[int] = mapped_column(Integer, nullable=False)
-    metadata: Mapped[dict[str, Any]] = mapped_column(JSON, nullable=True)
+    extra_metadata: Mapped[dict[str, Any]] = mapped_column(
+        "metadata", JSON, nullable=True
+    )
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now()
     )
@@ -455,7 +462,7 @@ class DatabaseManager:
             "file_path": dataset.file_path,
             "num_reports": dataset.num_reports,
             "num_techniques": dataset.num_techniques,
-            "metadata": dataset.metadata,
+            "metadata": dataset.extra_metadata,
             "created_at": dataset.created_at,
             "updated_at": dataset.updated_at,
         }

@@ -1,35 +1,47 @@
-# Core recommender implementations (always available)
-from tie.recommender.bpr_recommender import BPRRecommender  # type: ignore
-from tie.recommender.factorization_recommender import FactorizationRecommender  # type: ignore
-from tie.recommender.recommender import Recommender  # type: ignore
-from tie.recommender.top_items_recommender import TopItemsRecommender  # type: ignore
-from tie.recommender.wals_recommender import WalsRecommender  # type: ignore
+# Core recommender implementations.
+# Each import is individually guarded so environments without heavy optional
+# ML dependencies (tensorflow / keras / implicit) can still import the package.
+from .recommender import Recommender  # type: ignore
+from .top_items_recommender import TopItemsRecommender  # type: ignore
 
-# Optional implementations that depend on the 'implicit' library.
-# Guard imports so the package remains importable without native build toolchain.
+# TensorFlow / Keras dependent recommenders
 try:  # pragma: no cover - optional dependency
-    from tie.recommender.implicit_bpr_recommender import (  # type: ignore
-        ImplicitBPRRecommender,
-    )
+    from .factorization_recommender import FactorizationRecommender  # type: ignore
+except ImportError:  # pragma: no cover
+    FactorizationRecommender = None  # type: ignore
+
+try:  # pragma: no cover - optional dependency
+    from .wals_recommender import WalsRecommender  # type: ignore
+except ImportError:  # pragma: no cover
+    WalsRecommender = None  # type: ignore
+
+try:  # pragma: no cover - optional dependency
+    from .bpr_recommender import BPRRecommender  # type: ignore
+except ImportError:  # pragma: no cover
+    BPRRecommender = None  # type: ignore
+
+# Optional implementations that depend on the 'implicit' library (native build).
+try:  # pragma: no cover - optional dependency
+    from .implicit_bpr_recommender import ImplicitBPRRecommender  # type: ignore
 except Exception:  # pragma: no cover
     ImplicitBPRRecommender = None  # type: ignore
 
 try:  # pragma: no cover - optional dependency
-    from tie.recommender.implicit_wals_recommender import (  # type: ignore
-        ImplicitWalsRecommender,
-    )
+    from .implicit_wals_recommender import ImplicitWalsRecommender  # type: ignore
 except Exception:  # pragma: no cover
     ImplicitWalsRecommender = None  # type: ignore
 
 __all__ = [
-    "FactorizationRecommender",
-    "BPRRecommender",
-    "WalsRecommender",
-    "TopItemsRecommender",
     "Recommender",
+    "TopItemsRecommender",
 ]
 
-# Expose optional classes only if they were imported successfully
+if FactorizationRecommender is not None:  # pragma: no cover
+    __all__.append("FactorizationRecommender")
+if WalsRecommender is not None:  # pragma: no cover
+    __all__.append("WalsRecommender")
+if BPRRecommender is not None:  # pragma: no cover
+    __all__.append("BPRRecommender")
 if ImplicitBPRRecommender is not None:  # pragma: no cover
     __all__.append("ImplicitBPRRecommender")
 if ImplicitWalsRecommender is not None:  # pragma: no cover
