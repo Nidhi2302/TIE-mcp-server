@@ -11,6 +11,7 @@ from sklearn.metrics import mean_squared_error
 try:  # pragma: no cover - optional dependency
     import keras  # type: ignore
     import tensorflow as tf  # type: ignore
+
     _TF_AVAILABLE = True
     # Optional eager config (TF2 already eager). Ignore if API absent.
     try:  # pragma: no cover
@@ -70,8 +71,7 @@ class FactorizationRecommender(Recommender):
 
         if not _TF_AVAILABLE:
             raise ImportError(
-                "TensorFlow / Keras not installed; install tensorflow / keras to use "
-                "FactorizationRecommender"
+                "TensorFlow / Keras not installed; install tensorflow / keras to use FactorizationRecommender"
             )
 
         self._U = tf.Variable(tf.zeros((m, k)))  # type: ignore[attr-defined]
@@ -88,9 +88,7 @@ class FactorizationRecommender(Recommender):
 
     def _require_tf(self):
         if not _TF_AVAILABLE:
-            raise ImportError(
-                "TensorFlow not available; FactorizationRecommender operation requires it"
-            )
+            raise ImportError("TensorFlow not available; FactorizationRecommender operation requires it")
 
     def _reset_embeddings(self):
         """Resets the embeddings to a standard normal."""
@@ -110,23 +108,17 @@ class FactorizationRecommender(Recommender):
             raise ValueError("Invalid state: TensorFlow unavailable for factorization model")
         if self._U.shape[1] != self._V.shape[1]:
             raise ValueError(
-                f"Embedding dimension mismatch: U.shape[1]={self._U.shape[1]} "
-                f"V.shape[1]={self._V.shape[1]}"
+                f"Embedding dimension mismatch: U.shape[1]={self._U.shape[1]} V.shape[1]={self._V.shape[1]}"
             )
         if len(self._U.shape) != 2 or len(self._V.shape) != 2:
-            raise ValueError(
-                f"Embeddings must be 2D (got U.ndim={len(self._U.shape)}, "
-                f"V.ndim={len(self._V.shape)})"
-            )
+            raise ValueError(f"Embeddings must be 2D (got U.ndim={len(self._U.shape)}, V.ndim={len(self._V.shape)})")
         if self._U.shape[0] <= 0 or self._V.shape[0] <= 0:
             raise ValueError(
-                f"Embedding counts must be > 0 (U.shape[0]={self._U.shape[0]}, "
-                f"V.shape[0]={self._V.shape[0]})"
+                f"Embedding counts must be > 0 (U.shape[0]={self._U.shape[0]}, V.shape[0]={self._V.shape[0]})"
             )
         if self._U.shape[1] <= 0 or self._V.shape[1] <= 0:
             raise ValueError(
-                f"Embedding dim must be > 0 (U.shape[1]={self._U.shape[1]}, "
-                f"V.shape[1]={self._V.shape[1]})"
+                f"Embedding dim must be > 0 (U.shape[1]={self._U.shape[1]}, V.shape[1]={self._V.shape[1]})"
             )
         if tf.math.reduce_any(tf.math.is_nan(self._U)):  # type: ignore[attr-defined]
             raise ValueError("User embedding matrix U contains NaN values")
@@ -289,7 +281,9 @@ class FactorizationRecommender(Recommender):
         self._checkrep()
 
         return calculate_predicted_matrix(
-            np.nan_to_num(self._U.numpy()), np.nan_to_num(self._V.numpy()), method  # type: ignore[union-attr]
+            np.nan_to_num(self._U.numpy()),
+            np.nan_to_num(self._V.numpy()),
+            method,  # type: ignore[union-attr]
         )
 
     def predict_new_entity(
@@ -318,7 +312,8 @@ class FactorizationRecommender(Recommender):
                 predictions = tf.matmul(self._V, embedding)  # type: ignore[attr-defined]
                 loss = (
                     self._loss(
-                        entity.values, tf.gather_nd(predictions, entity.indices)  # type: ignore[union-attr]
+                        entity.values,
+                        tf.gather_nd(predictions, entity.indices),  # type: ignore[union-attr]
                     )
                     + (
                         regularization_coefficient

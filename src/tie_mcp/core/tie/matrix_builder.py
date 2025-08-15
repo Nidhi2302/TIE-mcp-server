@@ -79,20 +79,14 @@ class ReportTechniqueMatrixBuilder:
         """
         # want matrix of reports on horizontal, techniques on vertical
         reports = self._get_report_techniques(self._combined_datset_filepath)
-        all_mitre_technique_ids_to_names = get_mitre_technique_ids_to_names(
-            self._enterprise_attack_filepath
-        )
+        all_mitre_technique_ids_to_names = get_mitre_technique_ids_to_names(self._enterprise_attack_filepath)
 
         # get all techniques present in all reports
         all_report_technique_ids = set()
         for report in reports:
             all_report_technique_ids.update(report)
         # some reports contain invalid techniques from ATT&CK v1
-        technique_ids = tuple(
-            set(all_mitre_technique_ids_to_names.keys()).intersection(
-                all_report_technique_ids
-            )
-        )
+        technique_ids = tuple(set(all_mitre_technique_ids_to_names.keys()).intersection(all_report_technique_ids))
 
         techniques_to_index = {technique_ids[i]: i for i in range(len(technique_ids))}
 
@@ -153,14 +147,9 @@ class ReportTechniqueMatrixBuilder:
         if not (0 <= test_ratio <= 1):
             raise ValueError(f"test_ratio must be in [0,1] (got {test_ratio})")
         if not (0 <= validation_ratio <= 1):
-            raise ValueError(
-                f"validation_ratio must be in [0,1] (got {validation_ratio})"
-            )
+            raise ValueError(f"validation_ratio must be in [0,1] (got {validation_ratio})")
         if test_ratio + validation_ratio > 1:
-            raise ValueError(
-                "test_ratio + validation_ratio must be <= 1 "
-                f"(got {test_ratio + validation_ratio})"
-            )
+            raise ValueError(f"test_ratio + validation_ratio must be <= 1 (got {test_ratio + validation_ratio})")
 
         data = self.build()
 
@@ -195,33 +184,19 @@ class ReportTechniqueMatrixBuilder:
         for _, indices in indices_by_row.items():
             minimum_sample_for_row = _secure_random.sample(indices, k=1)
             if len(minimum_sample_for_row) != 1:
-                raise RuntimeError(
-                    "Failed to sample exactly one mandatory training index for a row"
-                )
+                raise RuntimeError("Failed to sample exactly one mandatory training index for a row")
             min_training_indices.add(minimum_sample_for_row[0])
 
-        remaining_indices_to_sample = frozenset(data.indices).difference(
-            min_training_indices
-        )
+        remaining_indices_to_sample = frozenset(data.indices).difference(min_training_indices)
 
         sampled_validation_indices = frozenset(
-            _secure_random.sample(
-                sorted(remaining_indices_to_sample), k=num_validation_samples
-            )
+            _secure_random.sample(sorted(remaining_indices_to_sample), k=num_validation_samples)
         )
-        remaining_indices_to_sample = remaining_indices_to_sample.difference(
-            sampled_validation_indices
-        )
+        remaining_indices_to_sample = remaining_indices_to_sample.difference(sampled_validation_indices)
 
-        sampled_test_indices = frozenset(
-            _secure_random.sample(
-                sorted(remaining_indices_to_sample), k=num_test_samples
-            )
-        )
+        sampled_test_indices = frozenset(_secure_random.sample(sorted(remaining_indices_to_sample), k=num_test_samples))
 
-        sampled_train_indices = frozenset(data.indices).difference(
-            sampled_validation_indices, sampled_test_indices
-        )
+        sampled_train_indices = frozenset(data.indices).difference(sampled_validation_indices, sampled_test_indices)
 
         if not sampled_train_indices.isdisjoint(sampled_test_indices):
             raise ValueError("Train and test index sets are not disjoint")

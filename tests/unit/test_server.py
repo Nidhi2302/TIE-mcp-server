@@ -63,9 +63,7 @@ class TestTIEMCPServer:
         assert isinstance(result[0], TextContent)
 
         # Verify model manager was called
-        tie_mcp_server.model_manager.get_model_info.assert_called_once_with(
-            "test-model"
-        )
+        tie_mcp_server.model_manager.get_model_info.assert_called_once_with("test-model")
 
     async def test_create_dataset_tool(self, tie_mcp_server):
         """Test create_dataset tool handler"""
@@ -92,9 +90,7 @@ class TestTIEMCPServer:
 
     async def test_get_attack_techniques_tool(self, tie_mcp_server):
         """Test get_attack_techniques tool handler"""
-        result = await tie_mcp_server._handle_get_attack_techniques(
-            {"technique_ids": ["T1059", "T1055"]}
-        )
+        result = await tie_mcp_server._handle_get_attack_techniques({"technique_ids": ["T1059", "T1055"]})
 
         assert isinstance(result, list)
         assert len(result) > 0
@@ -106,13 +102,9 @@ class TestTIEMCPServer:
     async def test_error_handling(self, tie_mcp_server):
         """Test error handling in tool handlers"""
         # Make engine manager raise an exception
-        tie_mcp_server.engine_manager.predict_techniques.side_effect = Exception(
-            "Test error"
-        )
+        tie_mcp_server.engine_manager.predict_techniques.side_effect = Exception("Test error")
 
-        result = await tie_mcp_server._handle_predict_techniques(
-            {"techniques": ["T1059"]}
-        )
+        result = await tie_mcp_server._handle_predict_techniques({"techniques": ["T1059"]})
 
         assert isinstance(result, list)
         assert len(result) > 0
@@ -144,10 +136,7 @@ class TestTIEMCPServer:
         import asyncio
 
         # Create multiple concurrent requests
-        tasks = [
-            tie_mcp_server._handle_predict_techniques(prediction_request)
-            for _ in range(5)
-        ]
+        tasks = [tie_mcp_server._handle_predict_techniques(prediction_request) for _ in range(5)]
 
         results = await asyncio.gather(*tasks)
 

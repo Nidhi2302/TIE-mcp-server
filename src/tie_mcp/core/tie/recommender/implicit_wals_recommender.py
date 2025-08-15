@@ -7,6 +7,7 @@ from sklearn.metrics import mean_squared_error
 # Optional TensorFlow dependency (only needed if passing SparseTensor inputs)
 try:  # pragma: no cover - optional dependency
     import tensorflow as tf  # type: ignore
+
     _TF_AVAILABLE = True
 except Exception:  # pragma: no cover
     tf = None  # type: ignore
@@ -115,10 +116,7 @@ class ImplicitWalsRecommender(Recommender):
 
         alpha = (1 / c) - 1
         if AlternatingLeastSquares is None:  # pragma: no cover - defensive
-            raise ImportError(
-                "implicit library not installed; install 'implicit' to use "
-                "ImplicitWalsRecommender"
-            )
+            raise ImportError("implicit library not installed; install 'implicit' to use ImplicitWalsRecommender")
         self._model = AlternatingLeastSquares(
             factors=self._k,
             regularization=regularization_coefficient,
@@ -128,24 +126,18 @@ class ImplicitWalsRecommender(Recommender):
 
         if hasattr(data, "indices") and hasattr(data, "values"):
             if not _TF_AVAILABLE:
-                raise ImportError(
-                    "TensorFlow not installed; required when passing a SparseTensor to fit()"
-                )
+                raise ImportError("TensorFlow not installed; required when passing a SparseTensor to fit()")
             row_indices = tuple(index[0] for index in data.indices)
             column_indices = tuple(index[1] for index in data.indices)
             shape = getattr(data, "shape", None)
             if shape is None:
                 shape_attr = getattr(data, "dense_shape", None)
                 shape = tuple(int(x) for x in shape_attr) if shape_attr is not None else None
-            sparse_data = sparse.csr_matrix(
-                (data.values, (row_indices, column_indices)), shape=shape
-            )
+            sparse_data = sparse.csr_matrix((data.values, (row_indices, column_indices)), shape=shape)
         elif isinstance(data, sparse.spmatrix):
             sparse_data = data
         else:
-            raise TypeError(
-                "data must be a TensorFlow SparseTensor (requires tensorflow) or a scipy sparse matrix"
-            )
+            raise TypeError("data must be a TensorFlow SparseTensor (requires tensorflow) or a scipy sparse matrix")
 
         self._model.fit(sparse_data)
 
@@ -174,9 +166,7 @@ class ImplicitWalsRecommender(Recommender):
 
         if hasattr(test_data, "indices") and hasattr(test_data, "values"):
             if not _TF_AVAILABLE:
-                raise ImportError(
-                    "TensorFlow not installed; required when passing a SparseTensor to evaluate()"
-                )
+                raise ImportError("TensorFlow not installed; required when passing a SparseTensor to evaluate()")
             row_indices = tuple(index[0] for index in test_data.indices)
             column_indices = tuple(index[1] for index in test_data.indices)
             prediction_values = predictions_matrix[row_indices, column_indices]
@@ -207,9 +197,7 @@ class ImplicitWalsRecommender(Recommender):
         """
         self._checkrep()
 
-        return calculate_predicted_matrix(
-            self._model.user_factors, self._model.item_factors, method
-        )
+        return calculate_predicted_matrix(self._model.user_factors, self._model.item_factors, method)
 
     def predict_new_entity(
         self,
@@ -233,9 +221,7 @@ class ImplicitWalsRecommender(Recommender):
         row_indices = np.zeros(len(entity.indices))
         column_indices = entity.indices[:, 0]
 
-        sparse_data = sparse.csr_matrix(
-            (entity.values, (row_indices, column_indices)), shape=(1, entity.shape[0])
-        )
+        sparse_data = sparse.csr_matrix((entity.values, (row_indices, column_indices)), shape=(1, entity.shape[0]))
 
         user_id = self._m + self._num_new_users
 

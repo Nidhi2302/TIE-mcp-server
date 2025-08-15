@@ -85,41 +85,31 @@ def sample_attack_data() -> dict:
             {
                 "type": "attack-pattern",
                 "id": "attack-pattern--1",
-                "external_references": [
-                    {"source_name": "mitre-attack", "external_id": "T1059"}
-                ],
+                "external_references": [{"source_name": "mitre-attack", "external_id": "T1059"}],
                 "name": "Command and Scripting Interpreter",
             },
             {
                 "type": "attack-pattern",
                 "id": "attack-pattern--2",
-                "external_references": [
-                    {"source_name": "mitre-attack", "external_id": "T1055"}
-                ],
+                "external_references": [{"source_name": "mitre-attack", "external_id": "T1055"}],
                 "name": "Process Injection",
             },
             {
                 "type": "attack-pattern",
                 "id": "attack-pattern--3",
-                "external_references": [
-                    {"source_name": "mitre-attack", "external_id": "T1082"}
-                ],
+                "external_references": [{"source_name": "mitre-attack", "external_id": "T1082"}],
                 "name": "System Information Discovery",
             },
             {
                 "type": "attack-pattern",
                 "id": "attack-pattern--4",
-                "external_references": [
-                    {"source_name": "mitre-attack", "external_id": "T1053"}
-                ],
+                "external_references": [{"source_name": "mitre-attack", "external_id": "T1053"}],
                 "name": "Scheduled Task/Job",
             },
             {
                 "type": "attack-pattern",
                 "id": "attack-pattern--5",
-                "external_references": [
-                    {"source_name": "mitre-attack", "external_id": "T1105"}
-                ],
+                "external_references": [{"source_name": "mitre-attack", "external_id": "T1105"}],
                 "name": "Ingress Tool Transfer",
             },
         ]
@@ -189,9 +179,7 @@ def mock_metrics_collector() -> MetricsCollector:
 
 
 @pytest_asyncio.fixture
-async def mock_model_manager(
-    mock_db_manager, mock_metrics_collector
-) -> AsyncGenerator[ModelManager, None]:
+async def mock_model_manager(mock_db_manager, mock_metrics_collector) -> AsyncGenerator[ModelManager, None]:
     """Mock model manager for testing"""
     model_manager = AsyncMock(spec=ModelManager)
     model_manager.initialize = AsyncMock()
@@ -207,9 +195,7 @@ async def mock_model_manager(
 
 
 @pytest_asyncio.fixture
-async def mock_engine_manager(
-    mock_model_manager, mock_metrics_collector
-) -> AsyncGenerator[TIEEngineManager, None]:
+async def mock_engine_manager(mock_model_manager, mock_metrics_collector) -> AsyncGenerator[TIEEngineManager, None]:
     """Mock engine manager for testing"""
     engine_manager = AsyncMock(spec=TIEEngineManager)
     engine_manager.initialize = AsyncMock()

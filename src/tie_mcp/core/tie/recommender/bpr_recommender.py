@@ -7,6 +7,7 @@ import numpy as np
 try:  # pragma: no cover - optional dependency guard
     import keras  # type: ignore
     import tensorflow as tf  # type: ignore
+
     _TF_AVAILABLE = True
 except Exception:  # pragma: no cover
     tf = None  # type: ignore
@@ -65,23 +66,17 @@ class BPRRecommender(Recommender):
         """Validates the rep invariant; raises ValueError on violation."""
         if self._U.shape[1] != self._V.shape[1]:
             raise ValueError(
-                f"Embedding dimension mismatch: "
-                f"U.shape[1]={self._U.shape[1]} V.shape[1]={self._V.shape[1]}"
+                f"Embedding dimension mismatch: U.shape[1]={self._U.shape[1]} V.shape[1]={self._V.shape[1]}"
             )
         if len(self._U.shape) != 2 or len(self._V.shape) != 2:
-            raise ValueError(
-                f"Embeddings must be 2D (got U.ndim={len(self._U.shape)}, "
-                f"V.ndim={len(self._V.shape)})"
-            )
+            raise ValueError(f"Embeddings must be 2D (got U.ndim={len(self._U.shape)}, V.ndim={len(self._V.shape)})")
         if self._U.shape[0] <= 0 or self._V.shape[0] <= 0:
             raise ValueError(
-                f"Embedding counts must be > 0 (U.shape[0]={self._U.shape[0]}, "
-                f"V.shape[0]={self._V.shape[0]})"
+                f"Embedding counts must be > 0 (U.shape[0]={self._U.shape[0]}, V.shape[0]={self._V.shape[0]})"
             )
         if self._U.shape[1] <= 0 or self._V.shape[1] <= 0:
             raise ValueError(
-                f"Embedding dim must be > 0 (U.shape[1]={self._U.shape[1]}, "
-                f"V.shape[1]={self._V.shape[1]})"
+                f"Embedding dim must be > 0 (U.shape[1]={self._U.shape[1]}, V.shape[1]={self._V.shape[1]})"
             )
 
     @property
@@ -125,17 +120,10 @@ class BPRRecommender(Recommender):
             raise ValueError("num_items_per_user contains NaN values")
         num_items_per_user[num_items_per_user == 0.0] = np.nan
         if num_items_per_user.shape != (m,):
-            raise ValueError(
-                f"num_items_per_user shape mismatch: "
-                f"expected {(m,)}, got {num_items_per_user.shape}"
-            )
-        sample_item_probability = np.nan_to_num(
-            data / np.expand_dims(num_items_per_user, axis=1)
-        )
+            raise ValueError(f"num_items_per_user shape mismatch: expected {(m,)}, got {num_items_per_user.shape}")
+        sample_item_probability = np.nan_to_num(data / np.expand_dims(num_items_per_user, axis=1))
 
-        joint_user_item_probability = (
-            np.expand_dims(sample_user_probability, axis=1) * sample_item_probability
-        )
+        joint_user_item_probability = np.expand_dims(sample_user_probability, axis=1) * sample_item_probability
         if joint_user_item_probability.shape != (m, n):
             raise ValueError(
                 "joint_user_item_probability shape mismatch: "
@@ -143,16 +131,12 @@ class BPRRecommender(Recommender):
             )
 
         flattened_probability = joint_user_item_probability.flatten("C")
-        u_i = np.random.choice(
-            np.arange(m * n), size=(num_samples,), p=flattened_probability
-        )
+        u_i = np.random.choice(np.arange(m * n), size=(num_samples,), p=flattened_probability)
 
         all_u = u_i // n
         all_i = u_i % n
         if not (all_i < n).all():
-            raise ValueError(
-                f"Sampled item indices out of range (max {all_i.max()} >= n {n})"
-            )
+            raise ValueError(f"Sampled item indices out of range (max {all_i.max()} >= n {n})")
 
         non_observations = 1 - data
 
@@ -166,9 +150,7 @@ class BPRRecommender(Recommender):
             # get
             potential_j = non_observations[u, :]
 
-            all_j_for_user = np.random.choice(
-                n, size=count, replace=True, p=potential_j / np.sum(potential_j)
-            )
+            all_j_for_user = np.random.choice(n, size=count, replace=True, p=potential_j / np.sum(potential_j))
 
             u_to_j[u] = all_j_for_user.tolist()
 
@@ -179,10 +161,7 @@ class BPRRecommender(Recommender):
             all_j.append(j)
 
         if not (len(all_u) == len(all_j) == len(all_i)):
-            raise ValueError(
-                "Sampled arrays length mismatch: "
-                f"|u|={len(all_u)} |i|={len(all_i)} |j|={len(all_j)}"
-            )
+            raise ValueError(f"Sampled arrays length mismatch: |u|={len(all_u)} |i|={len(all_i)} |j|={len(all_j)}")
 
         return all_u, all_i, all_j
 
@@ -201,16 +180,14 @@ class BPRRecommender(Recommender):
         observations_per_user = np.sum(data, axis=1)
         if observations_per_user.shape != (m,):
             raise ValueError(
-                f"observations_per_user shape mismatch: "
-                f"expected {(m,)}, got {observations_per_user.shape}"
+                f"observations_per_user shape mismatch: expected {(m,)}, got {observations_per_user.shape}"
             )
 
         samples_per_user = observations_per_user * (n - observations_per_user)
         sample_user_probability = samples_per_user / np.sum(samples_per_user)
         if sample_user_probability.shape != (m,):
             raise ValueError(
-                f"sample_user_probability shape mismatch: "
-                f"expected {(m,)}, got {sample_user_probability.shape}"
+                f"sample_user_probability shape mismatch: expected {(m,)}, got {sample_user_probability.shape}"
             )
 
         return sample_user_probability
@@ -243,9 +220,7 @@ class BPRRecommender(Recommender):
             The recommender to the new trained state.
         """
         if not _TF_AVAILABLE:
-            raise ImportError(
-                "TensorFlow/Keras not installed; install tensorflow and keras to use fit()"
-            )
+            raise ImportError("TensorFlow/Keras not installed; install tensorflow and keras to use fit()")
 
         # start by resetting embeddings for proper fit
         self._reset_embeddings()
@@ -267,13 +242,9 @@ class BPRRecommender(Recommender):
             j = all_j[iteration_count]
 
             if data[u, i] != 1:
-                raise ValueError(
-                    f"Positive sample expectation violated: data[{u},{i}]={data[u, i]}"
-                )
+                raise ValueError(f"Positive sample expectation violated: data[{u},{i}]={data[u, i]}")
             if data[u, j] != 0:
-                raise ValueError(
-                    f"Negative sample expectation violated: data[{u},{j}]={data[u, j]}"
-                )
+                raise ValueError(f"Negative sample expectation violated: data[{u},{j}]={data[u, j]}")
 
             # theta = theta + alpha * (e^(-x) sigma(x) d/dtheta x + lambda theta)
             x_ui = self._predict_for_single_entry(u, i)
@@ -288,15 +259,9 @@ class BPRRecommender(Recommender):
             # derivative wrt h_j
             d_hj = -self._U[u, :]
 
-            self._U[u, :] += learning_rate * (
-                sigmoid_derivative * d_w - (regularization_coefficient * self._U[u, :])
-            )
-            self._V[i, :] += learning_rate * (
-                sigmoid_derivative * d_hi - (regularization_coefficient * self._V[i, :])
-            )
-            self._V[j, :] += learning_rate * (
-                sigmoid_derivative * d_hj - (regularization_coefficient * self._V[j, :])
-            )
+            self._U[u, :] += learning_rate * (sigmoid_derivative * d_w - (regularization_coefficient * self._U[u, :]))
+            self._V[i, :] += learning_rate * (sigmoid_derivative * d_hi - (regularization_coefficient * self._V[i, :]))
+            self._V[j, :] += learning_rate * (sigmoid_derivative * d_hj - (regularization_coefficient * self._V[j, :]))
 
         # return theta
         # set in rep
@@ -321,9 +286,7 @@ class BPRRecommender(Recommender):
             The mean squared error of the test data.
         """
         if not _TF_AVAILABLE:
-            raise ImportError(
-                "TensorFlow/Keras not installed; install tensorflow and keras to use evaluate()"
-            )
+            raise ImportError("TensorFlow/Keras not installed; install tensorflow and keras to use evaluate()")
         pred = self.predict(method)
         predictions = tf.gather_nd(pred, test_data.indices)
         loss = keras.losses.MeanSquaredError()
@@ -386,9 +349,7 @@ class BPRRecommender(Recommender):
             loc=0, scale=math.sqrt(1 / self._U.shape[1]), size=(1, self._U.shape[1])
         )
 
-        _, all_i, all_j = self._sample_dataset(
-            tf.expand_dims(new_entity, axis=0), num_samples=num_iterations
-        )
+        _, all_i, all_j = self._sample_dataset(tf.expand_dims(new_entity, axis=0), num_samples=num_iterations)
 
         # initialize theta - done - init
         # repeat
@@ -408,16 +369,13 @@ class BPRRecommender(Recommender):
             d_w = self._V[i, :] - self._V[j, :]
 
             new_entity_embedding += learning_rate * (
-                sigmoid_derivative * d_w
-                - (regularization_coefficient * new_entity_embedding)
+                sigmoid_derivative * d_w - (regularization_coefficient * new_entity_embedding)
             )
 
         # return theta
         # set in rep
 
-        return np.squeeze(
-            calculate_predicted_matrix(new_entity_embedding, self._V, method)
-        )
+        return np.squeeze(calculate_predicted_matrix(new_entity_embedding, self._V, method))
 
 
 Recommender.register(BPRRecommender)

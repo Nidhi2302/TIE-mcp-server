@@ -164,9 +164,7 @@ class ModelSettings(BaseSettings):
 
     # WALS default hyperparameters
     wals_epochs: int = Field(default=25)
-    wals_c_values: list[float] = Field(
-        default=[0.001, 0.005, 0.01, 0.05, 0.1, 0.3, 0.5, 0.7]
-    )
+    wals_c_values: list[float] = Field(default=[0.001, 0.005, 0.01, 0.05, 0.1, 0.3, 0.5, 0.7])
     wals_regularization_values: list[float] = Field(default=[0.0, 0.0001, 0.001, 0.01])
 
     # BPR default hyperparameters
@@ -209,12 +207,8 @@ class Settings(BaseSettings):
     api_v1_prefix: str = Field(default="/api/v1")
 
     # Enterprise ATT&CK data
-    enterprise_attack_filepath: str = Field(
-        default="data/datasets/stix/enterprise-attack.json"
-    )
-    default_dataset_filepath: str = Field(
-        default="data/datasets/combined_dataset_full_frequency.json"
-    )
+    enterprise_attack_filepath: str = Field(default="data/datasets/stix/enterprise-attack.json")
+    default_dataset_filepath: str = Field(default="data/datasets/combined_dataset_full_frequency.json")
 
     # Component settings
     database: DatabaseSettings = Field(default_factory=DatabaseSettings)

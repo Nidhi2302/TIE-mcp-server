@@ -35,9 +35,7 @@ logger = logging.getLogger(__name__)
 class TIEEngineManager:
     """High-level manager for TIE engine operations"""
 
-    def __init__(
-        self, model_manager: ModelManager, metrics_collector: MetricsCollector
-    ):
+    def __init__(self, model_manager: ModelManager, metrics_collector: MetricsCollector):
         self.model_manager = model_manager
         self.metrics_collector = metrics_collector
         self.current_engine: TechniqueInferenceEngine | None = None
@@ -96,14 +94,10 @@ class TIEEngineManager:
             # Convert prediction method
 
             # Run prediction in thread to avoid blocking
-            predictions_df = await run_in_thread(
-                engine.predict_for_new_report, frozenset(techniques)
-            )
+            predictions_df = await run_in_thread(engine.predict_for_new_report, frozenset(techniques))
 
             # Sort by predictions and get top k
-            top_predictions = predictions_df.sort_values(
-                by="predictions", ascending=False
-            ).head(top_k)
+            top_predictions = predictions_df.sort_values(by="predictions", ascending=False).head(top_k)
 
             # Format response
             predicted_techniques = []
@@ -192,11 +186,7 @@ class TIEEngineManager:
             )
 
             # Create TIE engine
-            pred_method = (
-                PredictionMethod.DOT
-                if model_type in ["wals", "factorization"]
-                else PredictionMethod.COSINE
-            )
+            pred_method = PredictionMethod.DOT if model_type in ["wals", "factorization"] else PredictionMethod.COSINE
 
             engine = TechniqueInferenceEngine(
                 training_data=training_data,
@@ -264,9 +254,7 @@ class TIEEngineManager:
             logger.error(f"Error in train_model: {e}")
             raise
 
-    async def evaluate_model(
-        self, model_id: str, k_values: list[int] = None
-    ) -> ModelEvaluationResponse:
+    async def evaluate_model(self, model_id: str, k_values: list[int] = None) -> ModelEvaluationResponse:
         """Evaluate a trained model"""
         if k_values is None:
             k_values = [10, 20, 50]
@@ -277,17 +265,13 @@ class TIEEngineManager:
             for k in k_values:
                 precision = await run_in_thread(engine.precision, k)
                 recall = await run_in_thread(engine.recall, k)
-                ndcg = await run_in_thread(
-                    engine.normalized_discounted_cumulative_gain, k
-                )
+                ndcg = await run_in_thread(engine.normalized_discounted_cumulative_gain, k)
 
                 metrics[f"precision_at_{k}"] = precision
                 metrics[f"recall_at_{k}"] = recall
                 metrics[f"ndcg_at_{k}"] = ndcg
 
-            return ModelEvaluationResponse(
-                model_id=model_id, metrics=metrics, k_values=k_values
-            )
+            return ModelEvaluationResponse(model_id=model_id, metrics=metrics, k_values=k_values)
 
         except Exception as e:
             logger.error(f"Error evaluating model {model_id}: {e}")
@@ -331,9 +315,7 @@ class TIEEngineManager:
             logger.error(f"Error getting ATT&CK techniques: {e}")
             raise
 
-    async def _get_engine(
-        self, model_id: str | None = None
-    ) -> TechniqueInferenceEngine:
+    async def _get_engine(self, model_id: str | None = None) -> TechniqueInferenceEngine:
         """Get or load TIE engine"""
         if model_id:
             return await self.model_manager.load_model(model_id)
@@ -395,9 +377,7 @@ class TIEEngineManager:
         else:
             return {}
 
-    async def _evaluate_trained_model(
-        self, engine: TechniqueInferenceEngine
-    ) -> dict[str, float]:
+    async def _evaluate_trained_model(self, engine: TechniqueInferenceEngine) -> dict[str, float]:
         """Evaluate a trained model and return metrics"""
         metrics = {}
 

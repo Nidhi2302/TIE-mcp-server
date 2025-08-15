@@ -138,9 +138,7 @@ async def handle_list_tools() -> list[types.Tool]:
     return [
         types.Tool(
             name="predict_techniques",
-            description=(
-                "Predict MITRE ATT&CK techniques for a given set of observed techniques"
-            ),
+            description=("Predict MITRE ATT&CK techniques for a given set of observed techniques"),
             inputSchema={
                 "type": "object",
                 "properties": {
@@ -312,10 +310,7 @@ async def handle_read_resource(uri: str) -> str:
             '"message": "Mock ATT&CK data"}'
         )
     elif uri == "metrics://system":
-        return (
-            '{"cpu_usage": 25.0, "memory_usage": 45.0, '
-            '"message": "Mock system metrics"}'
-        )
+        return '{"cpu_usage": 25.0, "memory_usage": 45.0, "message": "Mock system metrics"}'
     else:
         raise ValueError(f"Unknown resource: {uri}")
 

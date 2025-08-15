@@ -25,7 +25,7 @@ classifiers = [
 ]
 
 [tool.poetry.dependencies]
-python = ">=3.11, <3.14"
+python = ">=3.10, <3.14"
 # Core MCP dependencies
 mcp = "^1.0.0"
 # Essential dependencies

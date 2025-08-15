@@ -50,14 +50,10 @@ def setup_logging():
 
     if settings.is_development():
         # Human-readable format for development
-        formatter = logging.Formatter(
-            "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
-        )
+        formatter = logging.Formatter("%(asctime)s - %(name)s - %(levelname)s - %(message)s")
     else:
         # JSON format for production
-        formatter = jsonlogger.JsonFormatter(
-            "%(asctime)s %(name)s %(levelname)s %(message)s"
-        )
+        formatter = jsonlogger.JsonFormatter("%(asctime)s %(name)s %(levelname)s %(message)s")
 
     console_handler.setFormatter(formatter)
     root_logger.addHandler(console_handler)
@@ -168,9 +164,7 @@ class AuditLogger:
     def __init__(self):
         self.logger = ContextualLogger("audit")
 
-    def log_model_training_started(
-        self, model_id: str, model_type: str, user_id: str | None = None
-    ):
+    def log_model_training_started(self, model_id: str, model_type: str, user_id: str | None = None):
         """Log model training start"""
         self.logger.info(
             "Model training started",
@@ -197,9 +191,7 @@ class AuditLogger:
             user_id=user_id,
         )
 
-    def log_model_training_failed(
-        self, model_type: str, error: str, user_id: str | None = None
-    ):
+    def log_model_training_failed(self, model_type: str, error: str, user_id: str | None = None):
         """Log model training failure"""
         self.logger.error(
             "Model training failed",
@@ -226,9 +218,7 @@ class AuditLogger:
             user_id=user_id,
         )
 
-    def log_model_deleted(
-        self, model_id: str, model_name: str, user_id: str | None = None
-    ):
+    def log_model_deleted(self, model_id: str, model_name: str, user_id: str | None = None):
         """Log model deletion"""
         self.logger.info(
             "Model deleted",
@@ -300,9 +290,7 @@ class SecurityLogger:
     def __init__(self):
         self.logger = ContextualLogger("security")
 
-    def log_authentication_attempt(
-        self, user_id: str, success: bool, ip_address: str | None = None
-    ):
+    def log_authentication_attempt(self, user_id: str, success: bool, ip_address: str | None = None):
         """Log authentication attempt"""
         self.logger.info(
             "Authentication attempt",
@@ -312,9 +300,7 @@ class SecurityLogger:
             ip_address=ip_address,
         )
 
-    def log_authorization_failure(
-        self, user_id: str, resource: str, action: str, ip_address: str | None = None
-    ):
+    def log_authorization_failure(self, user_id: str, resource: str, action: str, ip_address: str | None = None):
         """Log authorization failure"""
         self.logger.warning(
             "Authorization failure",
@@ -325,9 +311,7 @@ class SecurityLogger:
             ip_address=ip_address,
         )
 
-    def log_rate_limit_exceeded(
-        self, user_id: str, endpoint: str, ip_address: str | None = None
-    ):
+    def log_rate_limit_exceeded(self, user_id: str, endpoint: str, ip_address: str | None = None):
         """Log rate limit exceeded"""
         self.logger.warning(
             "Rate limit exceeded",

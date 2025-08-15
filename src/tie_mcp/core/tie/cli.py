@@ -97,9 +97,7 @@ def export_model(dataset_filepath: str, enterprise_attack_filepath: str, outfile
     if report_ids.shape != (m,):
         raise ValueError(f"Expected report_ids shape ({m},), got {report_ids.shape}")
     if technique_ids.shape != (n,):
-        raise ValueError(
-            f"Expected technique_ids shape ({n},), got {technique_ids.shape}"
-        )
+        raise ValueError(f"Expected technique_ids shape ({n},), got {technique_ids.shape}")
 
     np.savez_compressed(
         outfile,

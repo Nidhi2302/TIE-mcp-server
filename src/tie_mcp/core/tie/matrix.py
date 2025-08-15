@@ -47,13 +47,10 @@ class ReportTechniqueMatrix:
     def _checkrep(self):
         """Validates the representation invariant; raises ValueError on violation."""
         if len(self._indices) == 0:
-            raise ValueError(
-                "ReportTechniqueMatrix must contain at least one non-zero entry"
-            )
+            raise ValueError("ReportTechniqueMatrix must contain at least one non-zero entry")
         if len(self._values) != len(self._indices):
             raise ValueError(
-                "Length mismatch: values length "
-                f"{len(self._values)} != indices length {len(self._indices)}"
+                f"Length mismatch: values length {len(self._values)} != indices length {len(self._indices)}"
             )
 
     @property
@@ -105,9 +102,7 @@ class ReportTechniqueMatrix:
             raise ImportError(
                 "TensorFlow is required for to_sparse_tensor(); install tensorflow to use this method."
             ) from e
-        return tf.SparseTensor(
-            indices=self._indices, values=self._values, dense_shape=(self.m, self.n)
-        )
+        return tf.SparseTensor(indices=self._indices, values=self._values, dense_shape=(self.m, self.n))
 
     def to_numpy(self) -> np.ndarray:
         """Converts the matrix to a numpy array of shape."""

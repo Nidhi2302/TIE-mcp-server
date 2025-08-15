@@ -1,4 +1,3 @@
-
 """
 Performance tests for TIE MCP Server - Simplified version
 """
@@ -24,9 +23,7 @@ class TestPerformance:
     """Simplified performance test suite"""
 
     @pytest.mark.asyncio
-    async def test_basic_prediction_performance(
-        self, large_dataset, temp_attack_file, stress_test_techniques
-    ):
+    async def test_basic_prediction_performance(self, large_dataset, temp_attack_file, stress_test_techniques):
         """Test basic prediction performance"""
         # Build model for testing
         data_builder = ReportTechniqueMatrixBuilder(
@@ -34,9 +31,7 @@ class TestPerformance:
             enterprise_attack_filepath=str(temp_attack_file),
         )
 
-        training_data, test_data, validation_data = (
-            data_builder.build_train_test_validation(0.2, 0.1)
-        )
+        training_data, test_data, validation_data = data_builder.build_train_test_validation(0.2, 0.1)
 
         # Create and train a simple model
         model = WalsRecommender(m=training_data.m, n=training_data.n, k=4)
@@ -57,9 +52,7 @@ class TestPerformance:
         predictions = tie.predict_for_new_report(frozenset(stress_test_techniques[:5]))
         single_prediction_time = time.time() - start_time
 
-        assert single_prediction_time < 5.0, (
-            f"Single prediction took {single_prediction_time:.2f}s"
-        )
+        assert single_prediction_time < 5.0, f"Single prediction took {single_prediction_time:.2f}s"
         assert len(predictions) > 0
 
         print(f"\nSingle prediction time: {single_prediction_time:.3f}s")

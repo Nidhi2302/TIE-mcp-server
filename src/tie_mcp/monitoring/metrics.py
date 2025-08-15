@@ -108,9 +108,7 @@ class MetricsCollector:
         )
 
         # System metrics
-        self.cpu_usage = Gauge(
-            "tie_cpu_usage_percent", "CPU usage percentage", registry=self.registry
-        )
+        self.cpu_usage = Gauge("tie_cpu_usage_percent", "CPU usage percentage", registry=self.registry)
 
         self.memory_usage = Gauge(
             "tie_memory_usage_percent",
@@ -118,9 +116,7 @@ class MetricsCollector:
             registry=self.registry,
         )
 
-        self.disk_usage = Gauge(
-            "tie_disk_usage_percent", "Disk usage percentage", registry=self.registry
-        )
+        self.disk_usage = Gauge("tie_disk_usage_percent", "Disk usage percentage", registry=self.registry)
 
         # Error metrics
         self.error_counter = Counter(
@@ -146,12 +142,8 @@ class MetricsCollector:
         )
 
         # Application info
-        self.app_info = Info(
-            "tie_app_info", "Application information", registry=self.registry
-        )
-        self.app_info.info(
-            {"version": settings.app_version, "environment": settings.environment.value}
-        )
+        self.app_info = Info("tie_app_info", "Application information", registry=self.registry)
+        self.app_info.info({"version": settings.app_version, "environment": settings.environment.value})
 
     def _start_background_tasks(self):
         """Start background tasks for metrics collection"""
@@ -160,9 +152,7 @@ class MetricsCollector:
             asyncio.run(self._collect_system_metrics_loop())
 
         # Start system metrics collection in background thread
-        metrics_thread = threading.Thread(
-            target=run_system_metrics_collection, daemon=True, name="metrics_collector"
-        )
+        metrics_thread = threading.Thread(target=run_system_metrics_collection, daemon=True, name="metrics_collector")
         metrics_thread.start()
 
     async def _collect_system_metrics_loop(self):
@@ -268,9 +258,7 @@ class MetricsCollector:
         except Exception as e:
             logger.error("Error recording prediction metrics", error=str(e))
 
-    async def record_training(
-        self, duration: float, model_type: str, dataset_size: int, success: bool
-    ):
+    async def record_training(self, duration: float, model_type: str, dataset_size: int, success: bool):
         """Record training metrics"""
         try:
             status = "success" if success else "failure"
@@ -306,9 +294,7 @@ class MetricsCollector:
         except Exception as e:
             logger.error("Error recording training metrics", error=str(e))
 
-    async def record_error(
-        self, component: str, error_type: str, error_message: str = ""
-    ):
+    async def record_error(self, component: str, error_type: str, error_message: str = ""):
         """Record error metrics"""
         try:
             # Update Prometheus metrics
@@ -324,17 +310,13 @@ class MetricsCollector:
                         labels={
                             "component": component,
                             "error_type": error_type,
-                            "error_message": error_message[
-                                :100
-                            ],  # Truncate long messages
+                            "error_message": error_message[:100],  # Truncate long messages
                         },
                     )
                 )
                 self._error_count += 1
 
-            logger.debug(
-                "Error metrics recorded", component=component, error_type=error_type
-            )
+            logger.debug("Error metrics recorded", component=component, error_type=error_type)
 
         except Exception as e:
             logger.error("Error recording error metrics", error=str(e))
@@ -343,9 +325,7 @@ class MetricsCollector:
         """Record model save event"""
         try:
             self.model_count.labels(status="active").inc()
-            logger.debug(
-                "Model save recorded", model_id=model_id, model_type=model_type
-            )
+            logger.debug("Model save recorded", model_id=model_id, model_type=model_type)
         except Exception as e:
             logger.error("Error recording model save", error=str(e))
 
@@ -365,18 +345,12 @@ class MetricsCollector:
         except Exception as e:
             logger.error("Error recording model deletion", error=str(e))
 
-    async def record_http_request(
-        self, method: str, endpoint: str, status_code: int, duration: float
-    ):
+    async def record_http_request(self, method: str, endpoint: str, status_code: int, duration: float):
         """Record HTTP request metrics"""
         try:
-            self.http_requests.labels(
-                method=method, endpoint=endpoint, status_code=str(status_code)
-            ).inc()
+            self.http_requests.labels(method=method, endpoint=endpoint, status_code=str(status_code)).inc()
 
-            self.http_duration.labels(method=method, endpoint=endpoint).observe(
-                duration
-            )
+            self.http_duration.labels(method=method, endpoint=endpoint).observe(duration)
 
             logger.debug(
                 "HTTP request recorded",
@@ -404,33 +378,21 @@ class MetricsCollector:
             # Calculate average prediction time (last 100 predictions)
             recent_predictions = list(self._prediction_metrics)[-100:]
             avg_prediction_time = (
-                sum(m.value for m in recent_predictions) / len(recent_predictions)
-                if recent_predictions
-                else 0.0
+                sum(m.value for m in recent_predictions) / len(recent_predictions) if recent_predictions else 0.0
             )
 
             # Calculate average training time (last 10 trainings)
             recent_trainings = list(self._training_metrics)[-10:]
             avg_training_time = (
-                sum(m.value for m in recent_trainings) / len(recent_trainings)
-                if recent_trainings
-                else 0.0
+                sum(m.value for m in recent_trainings) / len(recent_trainings) if recent_trainings else 0.0
             )
 
             # Calculate error rate (last hour)
             one_hour_ago = datetime.utcnow() - timedelta(hours=1)
-            recent_errors = [
-                m for m in self._error_metrics if m.timestamp > one_hour_ago
-            ]
-            recent_predictions_hour = [
-                m for m in self._prediction_metrics if m.timestamp > one_hour_ago
-            ]
+            recent_errors = [m for m in self._error_metrics if m.timestamp > one_hour_ago]
+            recent_predictions_hour = [m for m in self._prediction_metrics if m.timestamp > one_hour_ago]
 
-            error_rate = (
-                len(recent_errors) / len(recent_predictions_hour) * 100
-                if recent_predictions_hour
-                else 0.0
-            )
+            error_rate = len(recent_errors) / len(recent_predictions_hour) * 100 if recent_predictions_hour else 0.0
 
             return {
                 "cpu_usage_percent": cpu_percent,
@@ -449,9 +411,7 @@ class MetricsCollector:
             logger.error("Error getting system metrics", error=str(e))
             return {}
 
-    async def get_prediction_metrics(
-        self, since: datetime | None = None
-    ) -> list[dict[str, Any]]:
+    async def get_prediction_metrics(self, since: datetime | None = None) -> list[dict[str, Any]]:
         """Get prediction metrics since a specific time"""
         try:
             since = since or (datetime.utcnow() - timedelta(hours=24))
@@ -473,9 +433,7 @@ class MetricsCollector:
             logger.error("Error getting prediction metrics", error=str(e))
             return []
 
-    async def get_training_metrics(
-        self, since: datetime | None = None
-    ) -> list[dict[str, Any]]:
+    async def get_training_metrics(self, since: datetime | None = None) -> list[dict[str, Any]]:
         """Get training metrics since a specific time"""
         try:
             since = since or (datetime.utcnow() - timedelta(days=7))
@@ -497,9 +455,7 @@ class MetricsCollector:
             logger.error("Error getting training metrics", error=str(e))
             return []
 
-    async def get_error_metrics(
-        self, since: datetime | None = None
-    ) -> list[dict[str, Any]]:
+    async def get_error_metrics(self, since: datetime | None = None) -> list[dict[str, Any]]:
         """Get error metrics since a specific time"""
         try:
             since = since or (datetime.utcnow() - timedelta(hours=24))
@@ -549,10 +505,7 @@ class MetricsCollector:
                 )
 
             # Check memory usage
-            if (
-                system_metrics.get("memory_usage_percent", 0)
-                > thresholds["memory_usage"]
-            ):
+            if system_metrics.get("memory_usage_percent", 0) > thresholds["memory_usage"]:
                 alerts.append(
                     {
                         "metric": "memory_usage",
@@ -574,10 +527,7 @@ class MetricsCollector:
                 )
 
             # Check inference latency
-            if (
-                system_metrics.get("average_prediction_time", 0)
-                > thresholds["inference_latency_p95"]
-            ):
+            if system_metrics.get("average_prediction_time", 0) > thresholds["inference_latency_p95"]:
                 alerts.append(
                     {
                         "metric": "inference_latency",

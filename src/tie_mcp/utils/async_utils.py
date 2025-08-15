@@ -90,9 +90,7 @@ async def run_with_timeout(
         raise asyncio.TimeoutError(timeout_message) from None
 
 
-async def gather_with_concurrency(
-    coroutines: list[Awaitable[T]], max_concurrency: int = 10
-) -> list[T]:
+async def gather_with_concurrency(coroutines: list[Awaitable[T]], max_concurrency: int = 10) -> list[T]:
     """
     Run coroutines with limited concurrency
 
@@ -135,9 +133,7 @@ class AsyncLock:
             await asyncio.wait_for(self._lock.acquire(), timeout=self._timeout)
             return self
         except asyncio.TimeoutError:
-            raise asyncio.TimeoutError(
-                f"Could not acquire lock within {self._timeout} seconds"
-            ) from None
+            raise asyncio.TimeoutError(f"Could not acquire lock within {self._timeout} seconds") from None
 
     async def __aexit__(self, exc_type, exc_val, exc_tb):
         self._lock.release()
@@ -158,11 +154,7 @@ class RateLimiter:
             now = asyncio.get_event_loop().time()
 
             # Remove old calls outside the time window
-            self.calls = [
-                call_time
-                for call_time in self.calls
-                if now - call_time < self.time_window
-            ]
+            self.calls = [call_time for call_time in self.calls if now - call_time < self.time_window]
 
             if len(self.calls) >= self.max_calls:
                 # Calculate how long to wait
@@ -218,10 +210,7 @@ async def retry_with_backoff(
                 logger.error(f"All {max_retries} retries exhausted for {func.__name__}")
                 break
 
-            logger.warning(
-                f"Attempt {attempt + 1} failed for {func.__name__}: {e}. "
-                f"Retrying in {delay}s..."
-            )
+            logger.warning(f"Attempt {attempt + 1} failed for {func.__name__}: {e}. Retrying in {delay}s...")
             await asyncio.sleep(delay)
             delay = min(delay * backoff_factor, max_delay)
 
@@ -235,9 +224,7 @@ class AsyncBatch:
         self.batch_size = batch_size
         self.max_concurrency = max_concurrency
 
-    async def process(
-        self, items: list[Any], processor: Callable[[list[Any]], Awaitable[list[Any]]]
-    ) -> list[Any]:
+    async def process(self, items: list[Any], processor: Callable[[list[Any]], Awaitable[list[Any]]]) -> list[Any]:
         """
         Process items in batches
 
@@ -249,16 +236,11 @@ class AsyncBatch:
             List of all processed results
         """
         # Split items into batches
-        batches = [
-            items[i : i + self.batch_size]
-            for i in range(0, len(items), self.batch_size)
-        ]
+        batches = [items[i : i + self.batch_size] for i in range(0, len(items), self.batch_size)]
 
         # Process batches with limited concurrency
         batch_coroutines = [processor(batch) for batch in batches]
-        batch_results = await gather_with_concurrency(
-            batch_coroutines, self.max_concurrency
-        )
+        batch_results = await gather_with_concurrency(batch_coroutines, self.max_concurrency)
 
         # Flatten results
         results = []

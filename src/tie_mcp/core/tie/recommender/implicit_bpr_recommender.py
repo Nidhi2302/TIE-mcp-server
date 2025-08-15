@@ -7,6 +7,7 @@ from sklearn.metrics import mean_squared_error
 # Optional dependency: TensorFlow (only needed if passing SparseTensor inputs)
 try:  # pragma: no cover - optional dependency
     import tensorflow as tf  # type: ignore
+
     _TF_AVAILABLE = True
 except Exception:  # pragma: no cover
     tf = None  # type: ignore
@@ -74,9 +75,7 @@ class ImplicitBPRRecommender:
         if self._k <= 0:
             raise ValueError(f"Invalid state: k must be > 0 (got {self._k})")
         if self._num_new_users < 0:
-            raise ValueError(
-                f"Invalid state: num_new_users must be >= 0 (got {self._num_new_users})"
-            )
+            raise ValueError(f"Invalid state: num_new_users must be >= 0 (got {self._num_new_users})")
 
     @property
     def U(self) -> np.ndarray:
@@ -118,20 +117,13 @@ class ImplicitBPRRecommender:
         """
 
         if BayesianPersonalizedRanking is None:  # pragma: no cover - defensive
-            raise ImportError(
-                "implicit library not installed; install 'implicit' to use "
-                "ImplicitBPRRecommender"
-            )
+            raise ImportError("implicit library not installed; install 'implicit' to use ImplicitBPRRecommender")
         if hasattr(data, "indices") and hasattr(data, "values"):
             if not _TF_AVAILABLE:
-                raise ImportError(
-                    "TensorFlow not installed; required when passing a SparseTensor to fit()"
-                )
+                raise ImportError("TensorFlow not installed; required when passing a SparseTensor to fit()")
         elif not isinstance(data, sparse.spmatrix):
             # Expect a TF SparseTensor-like object; if user passes unsupported type, raise.
-            raise TypeError(
-                "data must be a TensorFlow SparseTensor (if tensorflow installed)"
-            )
+            raise TypeError("data must be a TensorFlow SparseTensor (if tensorflow installed)")
         self._model = BayesianPersonalizedRanking(
             factors=self._k,
             learning_rate=learning_rate,
@@ -141,9 +133,7 @@ class ImplicitBPRRecommender:
         )
 
         if not hasattr(data, "indices") or not hasattr(data, "values"):
-            raise TypeError(
-                "data must be a TensorFlow SparseTensor (with indices/values attributes)"
-            )
+            raise TypeError("data must be a TensorFlow SparseTensor (with indices/values attributes)")
         row_indices = tuple(index[0] for index in data.indices)
         column_indices = tuple(index[1] for index in data.indices)
         shape = getattr(data, "shape", None)
@@ -151,9 +141,7 @@ class ImplicitBPRRecommender:
             # TF SparseTensor exposes .dense_shape; fall back to that if present
             shape_attr = getattr(data, "dense_shape", None)
             shape = tuple(int(x) for x in shape_attr) if shape_attr is not None else None
-        sparse_data = sparse.csr_matrix(
-            (data.values, (row_indices, column_indices)), shape=shape
-        )
+        sparse_data = sparse.csr_matrix((data.values, (row_indices, column_indices)), shape=shape)
 
         self._model.fit(sparse_data)
 
@@ -181,9 +169,7 @@ class ImplicitBPRRecommender:
         predictions_matrix = self.predict(method)
 
         if not hasattr(test_data, "indices") or not hasattr(test_data, "values"):
-            raise TypeError(
-                "test_data must be a TensorFlow SparseTensor (with indices/values attributes)"
-            )
+            raise TypeError("test_data must be a TensorFlow SparseTensor (with indices/values attributes)")
         row_indices = tuple(index[0] for index in test_data.indices)
         column_indices = tuple(index[1] for index in test_data.indices)
         prediction_values = predictions_matrix[row_indices, column_indices]
@@ -206,9 +192,7 @@ class ImplicitBPRRecommender:
         if self._model is None:
             raise RuntimeError("Model must be trained before calling predict")
         self._checkrep()
-        return calculate_predicted_matrix(
-            self._model.user_factors, self._model.item_factors, method
-        )
+        return calculate_predicted_matrix(self._model.user_factors, self._model.item_factors, method)
 
     def predict_new_entity(
         self,

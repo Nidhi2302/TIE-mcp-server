@@ -50,15 +50,12 @@ class TopItemsRecommender(Recommender):
             raise ValueError(f"Invalid state: n must be > 0 (got {self._n})")
         if self._item_frequencies.shape != (self._n,):
             raise ValueError(
-                "item_frequencies shape mismatch: "
-                f"expected {(self._n,)}, got {self._item_frequencies.shape}"
+                f"item_frequencies shape mismatch: expected {(self._n,)}, got {self._item_frequencies.shape}"
             )
         if not (0 <= self._item_frequencies).all():
             raise ValueError("Item frequencies contain negative values")
         if not (self._item_frequencies <= self._n - 1).all():
-            raise ValueError(
-                "Item frequencies contain values greater than allowed upper bound"
-            )
+            raise ValueError("Item frequencies contain values greater than allowed upper bound")
 
     def U(self) -> np.ndarray:
         """Gets U as a factor of the factorization UV^T."""
@@ -85,16 +82,13 @@ class TopItemsRecommender(Recommender):
         """
         # validate 1d array
         if len(item_frequencies.shape) != 1:
-            raise ValueError(
-                f"item_frequencies must be 1D (got shape {item_frequencies.shape})"
-            )
+            raise ValueError(f"item_frequencies must be 1D (got shape {item_frequencies.shape})")
 
         scaled_ranks = item_frequencies / (len(item_frequencies) - 1)
 
         if scaled_ranks.shape != item_frequencies.shape:
             raise ValueError(
-                "Scaled ranks shape mismatch: "
-                f"expected {item_frequencies.shape}, got {scaled_ranks.shape}"
+                f"Scaled ranks shape mismatch: expected {item_frequencies.shape}, got {scaled_ranks.shape}"
             )
 
         self._checkrep()
@@ -110,25 +104,19 @@ class TopItemsRecommender(Recommender):
         if hasattr(data, "indices"):  # likely a TF sparse tensor
             try:  # pragma: no cover - optional dependency
                 import tensorflow as tf  # type: ignore
-                technique_matrix: np.ndarray = tf.sparse.to_dense(
-                    tf.sparse.reorder(data)
-                ).numpy()
+
+                technique_matrix: np.ndarray = tf.sparse.to_dense(tf.sparse.reorder(data)).numpy()
             except Exception as e:  # pragma: no cover
-                raise ImportError(
-                    "TensorFlow required to pass a SparseTensor to TopItemsRecommender.fit()"
-                ) from e
+                raise ImportError("TensorFlow required to pass a SparseTensor to TopItemsRecommender.fit()") from e
         else:
             if not isinstance(data, np.ndarray):
-                raise TypeError(
-                    "data must be a TensorFlow SparseTensor or a numpy ndarray"
-                )
+                raise TypeError("data must be a TensorFlow SparseTensor or a numpy ndarray")
             technique_matrix = data
 
         technique_frequency = technique_matrix.sum(axis=0)
         if technique_frequency.shape != (self._n,):
             raise ValueError(
-                "Technique frequency shape mismatch: "
-                f"expected {(self._n,)}, got {technique_frequency.shape}"
+                f"Technique frequency shape mismatch: expected {(self._n,)}, got {technique_frequency.shape}"
             )
 
         ranks = technique_frequency.argsort().argsort()
@@ -153,13 +141,9 @@ class TopItemsRecommender(Recommender):
             values = td.values
         else:
             if not isinstance(test_data, np.ndarray):
-                raise TypeError(
-                    "test_data must be a TensorFlow SparseTensor or a numpy ndarray"
-                )
+                raise TypeError("test_data must be a TensorFlow SparseTensor or a numpy ndarray")
             if test_data.shape != (self._m, self._n):
-                raise ValueError(
-                    f"test_data shape mismatch: expected {(self._m, self._n)}, got {test_data.shape}"
-                )
+                raise ValueError(f"test_data shape mismatch: expected {(self._m, self._n)}, got {test_data.shape}")
             prediction_values = predictions_matrix[test_data > 0]
             values = test_data[test_data > 0]
 
@@ -171,10 +155,7 @@ class TopItemsRecommender(Recommender):
         matrix = np.repeat(np.expand_dims(scaled_ranks, axis=1), self._m, axis=1).T
 
         if matrix.shape != (self._m, self._n):
-            raise RuntimeError(
-                "Prediction matrix shape mismatch: "
-                f"expected {(self._m, self._n)}, got {matrix.shape}"
-            )
+            raise RuntimeError(f"Prediction matrix shape mismatch: expected {(self._m, self._n)}, got {matrix.shape}")
 
         self._checkrep()
         return matrix

@@ -24,9 +24,7 @@ if tf is not None:  # pragma: no branch
     tf.config.run_functions_eagerly(True)
     # Ensure eager execution is enabled (Bandit B101 replacement)
     if not tf.executing_eagerly():  # pragma: no cover
-        raise RuntimeError(
-            "TensorFlow eager execution is required for TechniqueInferenceEngine"
-        )
+        raise RuntimeError("TensorFlow eager execution is required for TechniqueInferenceEngine")
 else:  # pragma: no cover
     # TensorFlow unavailable; runtime operations will raise informative ImportError
     pass
@@ -87,11 +85,7 @@ class TechniqueInferenceEngine:
 
     def _checkrep(self):
         """Validate the representation invariant (replaces assert for Bandit B101)."""
-        if not (
-            self._training_data.shape
-            == self._test_data.shape
-            == self._validation_data.shape
-        ):
+        if not (self._training_data.shape == self._test_data.shape == self._validation_data.shape):
             raise ValueError(
                 "Inconsistent shapes among training, test, and validation data "
                 f"{self._training_data.shape=} "
@@ -122,12 +116,8 @@ class TechniqueInferenceEngine:
         Mutates:
             data to add a column titled "technique_name"
         """
-        all_mitre_technique_ids_to_names = get_mitre_technique_ids_to_names(
-            self._enterprise_attack_filepath
-        )
-        data.loc[:, "technique_name"] = data.apply(
-            lambda row: all_mitre_technique_ids_to_names.get(row.name), axis=1
-        )
+        all_mitre_technique_ids_to_names = get_mitre_technique_ids_to_names(self._enterprise_attack_filepath)
+        data.loc[:, "technique_name"] = data.apply(lambda row: all_mitre_technique_ids_to_names.get(row.name), axis=1)
 
     def fit(self, **kwargs) -> float:
         """Fit the model to the data.
@@ -140,9 +130,7 @@ class TechniqueInferenceEngine:
         self._require_tf()
         self._model.fit(self._training_data.to_sparse_tensor(), **kwargs)
 
-        mean_squared_error = self._model.evaluate(
-            self._test_data.to_sparse_tensor(), method=self._prediction_method
-        )
+        mean_squared_error = self._model.evaluate(self._test_data.to_sparse_tensor(), method=self._prediction_method)
 
         self._checkrep()
         return mean_squared_error
@@ -179,10 +167,7 @@ class TechniqueInferenceEngine:
                 variables.
             """
             if len(variables_names) != len(values):
-                raise ValueError(
-                    "Variable names and values length mismatch: "
-                    f"{len(variables_names)=} {len(values)=}"
-                )
+                raise ValueError(f"Variable names and values length mismatch: {len(variables_names)=} {len(values)=}")
 
             # base case: No variables over which to make product
 
@@ -190,9 +175,7 @@ class TechniqueInferenceEngine:
                 yield {}
             else:
                 for value in values[0]:
-                    for remaining_parameters in parameter_cartesian_product(
-                        variables_names[1:], values[1:]
-                    ):
+                    for remaining_parameters in parameter_cartesian_product(variables_names[1:], values[1:]):
                         yield remaining_parameters | {variables_names[0]: value}
 
         best_hyperparameters = {}
@@ -201,9 +184,7 @@ class TechniqueInferenceEngine:
         variable_names = tuple(kwargs.keys())
         variable_values = tuple(kwargs.get(key) for key in variable_names)
 
-        for hyperparameters in parameter_cartesian_product(
-            variable_names, variable_values
-        ):
+        for hyperparameters in parameter_cartesian_product(variable_names, variable_values):
             self.fit(**hyperparameters)
             score = recall_at_k(self.predict(), self._validation_data.to_pandas(), k=20)
 
@@ -273,9 +254,7 @@ class TechniqueInferenceEngine:
         Returns:
             NDCG computed on the top k predictions.
         """
-        return normalized_discounted_cumulative_gain(
-            self.predict(), self._test_data.to_pandas(), k=k
-        )
+        return normalized_discounted_cumulative_gain(self.predict(), self._test_data.to_pandas(), k=k)
 
     def predict(self) -> pd.DataFrame:
         """Obtains model predictions.
@@ -335,9 +314,7 @@ class TechniqueInferenceEngine:
         self._checkrep()
         return report_data
 
-    def predict_for_new_report(
-        self, techniques: frozenset[str], **kwargs
-    ) -> pd.DataFrame:
+    def predict_for_new_report(self, techniques: frozenset[str], **kwargs) -> pd.DataFrame:
         """Predicts for a new, yet-unseen report.
 
         Args:
@@ -355,18 +332,14 @@ class TechniqueInferenceEngine:
         """
         self._require_tf()
         all_technique_ids = self._training_data.technique_ids
-        technique_ids_to_indices = {
-            all_technique_ids[i]: i for i in range(len(all_technique_ids))
-        }
+        technique_ids_to_indices = {all_technique_ids[i]: i for i in range(len(all_technique_ids))}
 
         technique_indices = set()
         for technique in techniques:
             if technique in technique_ids_to_indices:
                 technique_indices.add(technique_ids_to_indices[technique])
             else:
-                raise TechniqueNotFoundException(
-                    f"Model has not been trained on {technique}."
-                )
+                raise TechniqueNotFoundException(f"Model has not been trained on {technique}.")
 
         technique_indices = list(technique_indices)
         technique_indices.sort()
@@ -375,13 +348,9 @@ class TechniqueInferenceEngine:
         values = np.ones((len(technique_indices),))
         n = self._training_data.n
 
-        technique_tensor = tf.SparseTensor(
-            indices=technique_indices_2d, values=values, dense_shape=(n,)
-        )
+        technique_tensor = tf.SparseTensor(indices=technique_indices_2d, values=values, dense_shape=(n,))
 
-        predictions = self._model.predict_new_entity(
-            technique_tensor, method=self._prediction_method, **kwargs
-        )
+        predictions = self._model.predict_new_entity(technique_tensor, method=self._prediction_method, **kwargs)
 
         training_indices_dense = np.zeros(len(predictions))
         training_indices_dense[technique_indices] = 1

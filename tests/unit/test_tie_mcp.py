@@ -53,9 +53,7 @@ class TestTIEMCPServer:
             }
         )
 
-        result = await server._handle_predict_techniques(
-            {"techniques": ["T1059", "T1055"]}
-        )
+        result = await server._handle_predict_techniques({"techniques": ["T1059", "T1055"]})
         assert result is not None
         assert isinstance(result, list)
         assert len(result) > 0
@@ -79,9 +77,7 @@ class TestTIEMCPServer:
         """Test error handling in handlers"""
         server = TIEMCPServer()
         server.engine_manager = MagicMock()
-        server.engine_manager.predict_techniques = AsyncMock(
-            side_effect=Exception("Test error")
-        )
+        server.engine_manager.predict_techniques = AsyncMock(side_effect=Exception("Test error"))
 
         # Should handle error gracefully
         result = await server._handle_predict_techniques({"techniques": ["T1059"]})
