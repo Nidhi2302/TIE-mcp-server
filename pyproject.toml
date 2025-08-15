@@ -35,7 +35,7 @@ numpy = ">=2.1.0,<3.0.0"  # Python 3.13 requires numpy 2.1+
 pandas = "^2.0.0"
 # Machine learning
 scikit-learn = "^1.4.1"
-implicit = "^0.7.2"
+# implicit = "^0.7.2"  # Optional heavy dependency requiring native build toolchain; disabled for CI/test portability
 # MITRE ATT&CK support
 mitreattack-python = "^3.0.2"
 # Async utilities

@@ -2,7 +2,12 @@ import copy
 
 import numpy as np
 import pandas as pd
-import tensorflow as tf
+
+# Optional TensorFlow import (make engine importable without TF installed)
+try:  # pragma: no cover - optional dependency
+    import tensorflow as tf  # type: ignore
+except Exception:  # pragma: no cover
+    tf = None  # type: ignore
 
 from tie.constants import PredictionMethod
 from tie.exceptions import TechniqueNotFoundException
@@ -15,12 +20,16 @@ from tie.utils import (
     recall_at_k,
 )
 
-tf.config.run_functions_eagerly(True)
-# Ensure eager execution is enabled (Bandit B101 replacement)
-if not tf.executing_eagerly():  # pragma: no cover
-    raise RuntimeError(
-        "TensorFlow eager execution is required for TechniqueInferenceEngine"
-    )
+if tf is not None:  # pragma: no branch
+    tf.config.run_functions_eagerly(True)
+    # Ensure eager execution is enabled (Bandit B101 replacement)
+    if not tf.executing_eagerly():  # pragma: no cover
+        raise RuntimeError(
+            "TensorFlow eager execution is required for TechniqueInferenceEngine"
+        )
+else:  # pragma: no cover
+    # TensorFlow unavailable; runtime operations will raise informative ImportError
+    pass
 
 
 class TechniqueInferenceEngine:
@@ -78,7 +87,6 @@ class TechniqueInferenceEngine:
 
     def _checkrep(self):
         """Validate the representation invariant (replaces assert for Bandit B101)."""
-        # - training_data.shape == test_data.shape == validation_data.shape
         if not (
             self._training_data.shape
             == self._test_data.shape
@@ -90,15 +98,20 @@ class TechniqueInferenceEngine:
                 f"{self._test_data.shape=} "
                 f"{self._validation_data.shape=}"
             )
-        # - model is not None
         if self._model is None:
             raise ValueError("Model must not be None")
-        # - prediction_method is not None
         if self._prediction_method is None:
             raise ValueError("Prediction method must not be None")
-        # - len(enterprise_attack_filepath) >= 0 (always true but keep defensive check)
         if self._enterprise_attack_filepath is None:
             raise ValueError("enterprise_attack_filepath must not be None")
+
+    def _require_tf(self):
+        """Raise ImportError if TensorFlow is not available when needed."""
+        if tf is None:  # pragma: no cover
+            raise ImportError(
+                "TensorFlow is not installed. Install the 'tensorflow' package to "
+                "enable TechniqueInferenceEngine training and prediction operations."
+            )
 
     def _add_technique_name_to_dataframe(self, data: pd.DataFrame):
         """Adds a technique name column to the dataframe.
@@ -118,19 +131,19 @@ class TechniqueInferenceEngine:
 
     def fit(self, **kwargs) -> float:
         """Fit the model to the data.
-
+    
         Kwargs: Model specific args.
-
+    
         Returns:
             The MSE of the prediction matrix, as determined by the test set.
         """
-        # train
+        self._require_tf()
         self._model.fit(self._training_data.to_sparse_tensor(), **kwargs)
-
+    
         mean_squared_error = self._model.evaluate(
             self._test_data.to_sparse_tensor(), method=self._prediction_method
         )
-
+    
         self._checkrep()
         return mean_squared_error
 
@@ -266,25 +279,26 @@ class TechniqueInferenceEngine:
 
     def predict(self) -> pd.DataFrame:
         """Obtains model predictions.
-
+    
         For each report, predicts a value for every technique based on the likelihood
         that technique should be featured in the report.  A higher predicted value for
         technique a than technique b represents an inference that technique a is more
         likely in the report than technique b.
-
+    
         Returns:
             A dataframe with the same shape, index, and columns as training_data and
             test_data containing the predictions values for each report and technique
             combination.
         """
+        self._require_tf()
         predictions = self._model.predict(method=self._prediction_method)
-
+    
         predictions_dataframe = pd.DataFrame(
             predictions,
             index=self._training_data.report_ids,
             columns=self._training_data.technique_ids,
         )
-
+    
         self._checkrep()
         return predictions_dataframe
 
@@ -325,11 +339,11 @@ class TechniqueInferenceEngine:
         self, techniques: frozenset[str], **kwargs
     ) -> pd.DataFrame:
         """Predicts for a new, yet-unseen report.
-
+    
         Args:
             techniques: an iterable of MITRE technique identifiers involved
                 in the new report.
-
+    
         Returns:
             A length n dataframe indexed by technique id containing the following
             columns:
@@ -339,12 +353,12 @@ class TechniqueInferenceEngine:
                 - technique_name: the technique name for the identifying technique in
                   the index
         """
-        # need to turn into the embeddings in the original matrix
+        self._require_tf()
         all_technique_ids = self._training_data.technique_ids
         technique_ids_to_indices = {
             all_technique_ids[i]: i for i in range(len(all_technique_ids))
         }
-
+    
         technique_indices = set()
         for technique in techniques:
             if technique in technique_ids_to_indices:
@@ -353,23 +367,22 @@ class TechniqueInferenceEngine:
                 raise TechniqueNotFoundException(
                     f"Model has not been trained on {technique}."
                 )
-
+    
         technique_indices = list(technique_indices)
         technique_indices.sort()
         technique_indices_2d = np.expand_dims(np.array(technique_indices), axis=1)
-
-        # 1 for each index
+    
         values = np.ones((len(technique_indices),))
         n = self._training_data.n
-
+    
         technique_tensor = tf.SparseTensor(
             indices=technique_indices_2d, values=values, dense_shape=(n,)
         )
-
+    
         predictions = self._model.predict_new_entity(
             technique_tensor, method=self._prediction_method, **kwargs
         )
-
+    
         training_indices_dense = np.zeros(len(predictions))
         training_indices_dense[technique_indices] = 1
         result_dataframe = pd.DataFrame(
@@ -380,9 +393,9 @@ class TechniqueInferenceEngine:
             },
             index=all_technique_ids,
         )
-
+    
         self._add_technique_name_to_dataframe(result_dataframe)
-
+    
         self._checkrep()
         return result_dataframe
 

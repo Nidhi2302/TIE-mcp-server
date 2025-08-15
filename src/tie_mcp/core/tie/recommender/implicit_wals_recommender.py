@@ -1,6 +1,5 @@
 import numpy as np
 import tensorflow as tf
-from implicit.als import AlternatingLeastSquares
 from scipy import sparse
 from sklearn.metrics import mean_squared_error
 
@@ -8,6 +7,12 @@ from tie.constants import PredictionMethod
 from tie.utils import calculate_predicted_matrix
 
 from .recommender import Recommender
+
+# Optional dependency: implicit (ALS model); guarded for environments without build toolchain
+try:  # pragma: no cover - import guard
+    from implicit.als import AlternatingLeastSquares  # type: ignore
+except Exception:  # pragma: no cover
+    AlternatingLeastSquares = None  # type: ignore
 
 
 class ImplicitWalsRecommender(Recommender):
@@ -100,6 +105,10 @@ class ImplicitWalsRecommender(Recommender):
             raise ValueError(f"c must satisfy 0 < c < 1 (got {c})")
 
         alpha = (1 / c) - 1
+        if AlternatingLeastSquares is None:  # pragma: no cover - defensive
+            raise ImportError(
+                "implicit library not installed; install 'implicit' to use ImplicitWalsRecommender"
+            )
         self._model = AlternatingLeastSquares(
             factors=self._k,
             regularization=regularization_coefficient,

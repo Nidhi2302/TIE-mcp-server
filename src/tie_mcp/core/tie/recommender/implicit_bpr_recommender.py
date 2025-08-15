@@ -1,11 +1,16 @@
 import numpy as np
 import tensorflow as tf
-from implicit.bpr import BayesianPersonalizedRanking
 from scipy import sparse
 from sklearn.metrics import mean_squared_error
 
 from tie.constants import PredictionMethod
 from tie.utils import calculate_predicted_matrix
+
+# Optional dependency: implicit (can be excluded in lightweight / CI environments)
+try:  # pragma: no cover - import guard
+    from implicit.bpr import BayesianPersonalizedRanking  # type: ignore
+except Exception:  # pragma: no cover
+    BayesianPersonalizedRanking = None  # type: ignore
 
 
 class ImplicitBPRRecommender:
@@ -103,6 +108,10 @@ class ImplicitBPRRecommender:
             The recommender to the new trained state.
         """
 
+        if BayesianPersonalizedRanking is None:  # pragma: no cover - defensive
+            raise ImportError(
+                "implicit library not installed; install 'implicit' to use ImplicitBPRRecommender"
+            )
         self._model = BayesianPersonalizedRanking(
             factors=self._k,
             learning_rate=learning_rate,
