@@ -18,14 +18,7 @@ import pytest_asyncio
 # Local imports
 from tie_mcp.config.settings import Settings
 from tie_mcp.core.engine_manager import TIEEngineManager
-# Import ModelManager with explicit diagnostic context (used for AsyncMock spec)
-try:
-    from tie_mcp.models.model_manager import ModelManager  # noqa: F401
-except ImportError as exc:  # pragma: no cover - defensive path
-    raise RuntimeError(
-        "Cannot import ModelManager (tie_mcp.models.model_manager). "
-        "Ensure package is installed and PYTHONPATH is correct."
-    ) from exc
+from tie_mcp.models.model_manager import ModelManager  # noqa: F401
 from tie_mcp.monitoring.metrics import MetricsCollector
 from tie_mcp.server import TIEMCPServer
 from tie_mcp.storage.database import DatabaseManager
