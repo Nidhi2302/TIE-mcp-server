@@ -93,6 +93,7 @@ jobs:
         DATABASE_URL: postgresql://postgres:postgres@localhost:5432/tie_mcp_test
         REDIS_URL: redis://localhost:6379
         ENVIRONMENT: testing
+        PYTHONPATH: src
       run: |
         export PYTHONPATH=src
         poetry run pytest tests/ -v --cov=tie_mcp --cov-report=xml --cov-report=html
@@ -247,6 +248,7 @@ jobs:
         DATABASE_URL: postgresql://postgres:postgres@localhost:5432/tie_mcp_perf
         REDIS_URL: redis://localhost:6379
         ENVIRONMENT: testing
+        PYTHONPATH: src
       run: |
         export PYTHONPATH=src
         poetry run pytest tests/performance/ -v --tb=short
