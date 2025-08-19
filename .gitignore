@@ -173,8 +173,9 @@ data/*.json
 *.h5
 *.hdf5
 
-# Model files
-models/
+# Model artifact files
+# Track application source package tie_mcp/models while ignoring large generated artifacts.
+data/models/
 *.model
 *.bin
 *.ckpt
