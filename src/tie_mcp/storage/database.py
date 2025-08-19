@@ -4,7 +4,7 @@ Database manager for TIE MCP Server
 
 import uuid
 from contextlib import asynccontextmanager
-from datetime import datetime
+from datetime import UTC, datetime
 from typing import Any
 
 from sqlalchemy import JSON, Boolean, DateTime, Float, Index, Integer, String, Text
@@ -268,7 +268,7 @@ class DatabaseManager:
                 if model:
                     for key, value in updates.items():
                         setattr(model, key, value)
-                    model.updated_at = datetime.utcnow()
+                    model.updated_at = datetime.now(UTC)
                     await session.commit()
                     logger.info("Model updated in database", model_id=model_id)
                 else:

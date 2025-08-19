@@ -6,7 +6,7 @@ import asyncio
 import threading
 from collections import deque
 from dataclasses import dataclass, field
-from datetime import datetime, timedelta
+from datetime import UTC, datetime, timedelta
 from typing import Any
 
 import psutil
@@ -183,7 +183,7 @@ class MetricsCollector:
             self.disk_usage.set(disk_percent)
 
             # Store internal metrics
-            timestamp = datetime.utcnow()
+            timestamp = datetime.now(UTC)
             with self._lock:
                 self._system_metrics.append(
                     MetricData(
@@ -232,7 +232,7 @@ class MetricsCollector:
             self.prediction_duration.labels(model_id=model_id).observe(duration)
 
             # Store internal metrics
-            timestamp = datetime.utcnow()
+            timestamp = datetime.now(UTC)
             with self._lock:
                 self._prediction_metrics.append(
                     MetricData(
@@ -269,7 +269,7 @@ class MetricsCollector:
                 self.training_duration.labels(model_type=model_type).observe(duration)
 
             # Store internal metrics
-            timestamp = datetime.utcnow()
+            timestamp = datetime.now(UTC)
             with self._lock:
                 self._training_metrics.append(
                     MetricData(
@@ -301,7 +301,7 @@ class MetricsCollector:
             self.error_counter.labels(error_type=error_type, component=component).inc()
 
             # Store internal metrics
-            timestamp = datetime.utcnow()
+            timestamp = datetime.now(UTC)
             with self._lock:
                 self._error_metrics.append(
                     MetricData(
@@ -388,7 +388,7 @@ class MetricsCollector:
             )
 
             # Calculate error rate (last hour)
-            one_hour_ago = datetime.utcnow() - timedelta(hours=1)
+            one_hour_ago = datetime.now(UTC) - timedelta(hours=1)
             recent_errors = [m for m in self._error_metrics if m.timestamp > one_hour_ago]
             recent_predictions_hour = [m for m in self._prediction_metrics if m.timestamp > one_hour_ago]
 
@@ -404,7 +404,7 @@ class MetricsCollector:
                 "average_prediction_time": avg_prediction_time,
                 "average_training_time": avg_training_time,
                 "error_rate_percent": error_rate,
-                "timestamp": datetime.utcnow().isoformat(),
+                "timestamp": datetime.now(UTC).isoformat(),
             }
 
         except Exception as e:
@@ -414,7 +414,7 @@ class MetricsCollector:
     async def get_prediction_metrics(self, since: datetime | None = None) -> list[dict[str, Any]]:
         """Get prediction metrics since a specific time"""
         try:
-            since = since or (datetime.utcnow() - timedelta(hours=24))
+            since = since or (datetime.now(UTC) - timedelta(hours=24))
 
             with self._lock:
                 metrics = [
@@ -436,7 +436,7 @@ class MetricsCollector:
     async def get_training_metrics(self, since: datetime | None = None) -> list[dict[str, Any]]:
         """Get training metrics since a specific time"""
         try:
-            since = since or (datetime.utcnow() - timedelta(days=7))
+            since = since or (datetime.now(UTC) - timedelta(days=7))
 
             with self._lock:
                 metrics = [
@@ -458,7 +458,7 @@ class MetricsCollector:
     async def get_error_metrics(self, since: datetime | None = None) -> list[dict[str, Any]]:
         """Get error metrics since a specific time"""
         try:
-            since = since or (datetime.utcnow() - timedelta(hours=24))
+            since = since or (datetime.now(UTC) - timedelta(hours=24))
 
             with self._lock:
                 metrics = [

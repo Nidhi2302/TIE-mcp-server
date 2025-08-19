@@ -2,11 +2,11 @@
 API schemas for TIE MCP Server
 """
 
-from datetime import datetime
+from datetime import UTC, datetime
 from enum import Enum
 from typing import Any
 
-from pydantic import BaseModel, Field, validator
+from pydantic import BaseModel, Field, field_validator, model_validator
 
 
 class ModelType(str, Enum):
@@ -45,7 +45,7 @@ class PredictionRequest(BaseModel):
     top_k: int = Field(20, ge=1, le=100, description="Number of top predictions")
     prediction_method: PredictionMethod = Field(PredictionMethod.DOT)
 
-    @validator("techniques")
+    @field_validator("techniques")
     def validate_techniques(cls, v):
         if not v:
             raise ValueError("At least one technique must be provided")
@@ -65,12 +65,11 @@ class TrainingRequest(BaseModel):
     model_name: str | None = Field(None, description="Optional model name")
     description: str | None = Field(None, description="Model description")
 
-    @validator("validation_ratio", "test_ratio")
-    def validate_ratios(cls, v, values):
-        if "validation_ratio" in values and "test_ratio" in values:
-            if values["validation_ratio"] + values["test_ratio"] > 1.0:
-                raise ValueError("validation_ratio + test_ratio must be <= 1.0")
-        return v
+    @model_validator(mode="after")
+    def validate_ratios(self):
+        if self.validation_ratio + self.test_ratio > 1.0:
+            raise ValueError("validation_ratio + test_ratio must be <= 1.0")
+        return self
 
 
 class DatasetCreationRequest(BaseModel):
@@ -80,11 +79,10 @@ class DatasetCreationRequest(BaseModel):
     dataset_name: str = Field(..., description="Name for the dataset")
     description: str = Field("", description="Dataset description")
 
-    @validator("reports")
+    @field_validator("reports")
     def validate_reports(cls, v):
         if not v:
             raise ValueError("At least one report must be provided")
-
         for i, report in enumerate(v):
             if "id" not in report:
                 raise ValueError(f"Report {i} missing 'id' field")
@@ -92,7 +90,6 @@ class DatasetCreationRequest(BaseModel):
                 raise ValueError(f"Report {i} missing 'techniques' field")
             if not isinstance(report["techniques"], list):
                 raise ValueError(f"Report {i} 'techniques' must be a list")
-
         return v
 
 
@@ -114,7 +111,7 @@ class PredictionResponse(BaseModel):
     model_id: str
     prediction_method: str
     execution_time_seconds: float
-    timestamp: datetime = Field(default_factory=datetime.utcnow)
+    timestamp: datetime = Field(default_factory=lambda: datetime.now(UTC))
 
 
 class ModelMetrics(BaseModel):
@@ -149,7 +146,7 @@ class TrainingResponse(BaseModel):
     metrics: dict[str, float]
     training_time_seconds: float
     dataset_info: DatasetInfo
-    timestamp: datetime = Field(default_factory=datetime.utcnow)
+    timestamp: datetime = Field(default_factory=lambda: datetime.now(UTC))
 
 
 class ModelInfo(BaseModel):
@@ -176,7 +173,7 @@ class ModelEvaluationResponse(BaseModel):
     model_id: str
     metrics: dict[str, float]
     k_values: list[int]
-    timestamp: datetime = Field(default_factory=datetime.utcnow)
+    timestamp: datetime = Field(default_factory=lambda: datetime.now(UTC))
 
 
 class AttackTechniqueInfo(BaseModel):
@@ -199,7 +196,7 @@ class DatasetCreationResponse(BaseModel):
     num_reports: int
     num_techniques: int
     file_path: str
-    created_at: datetime = Field(default_factory=datetime.utcnow)
+    created_at: datetime = Field(default_factory=lambda: datetime.now(UTC))
 
 
 class ModelListResponse(BaseModel):
@@ -229,7 +226,7 @@ class SystemMetrics(BaseModel):
     average_prediction_time: float
     average_training_time: float
     error_rate_percent: float
-    timestamp: datetime = Field(default_factory=datetime.utcnow)
+    timestamp: datetime = Field(default_factory=lambda: datetime.now(UTC))
 
 
 class HealthCheckResponse(BaseModel):
@@ -237,7 +234,7 @@ class HealthCheckResponse(BaseModel):
 
     status: str
     version: str
-    timestamp: datetime = Field(default_factory=datetime.utcnow)
+    timestamp: datetime = Field(default_factory=lambda: datetime.now(UTC))
     components: dict[str, str] = Field(default_factory=dict)
     metrics: SystemMetrics | None = None
 
@@ -248,7 +245,7 @@ class ErrorResponse(BaseModel):
     error: str
     detail: str | None = None
     error_code: str | None = None
-    timestamp: datetime = Field(default_factory=datetime.utcnow)
+    timestamp: datetime = Field(default_factory=lambda: datetime.now(UTC))
 
 
 # Task-related schemas for async operations
@@ -291,7 +288,7 @@ class BatchPredictionRequest(BaseModel):
     prediction_requests: list[PredictionRequest]
     model_id: str | None = None
 
-    @validator("prediction_requests")
+    @field_validator("prediction_requests")
     def validate_batch_size(cls, v):
         if len(v) > 1000:  # Reasonable batch limit
             raise ValueError("Batch size cannot exceed 1000 requests")
@@ -306,7 +303,7 @@ class BatchPredictionResponse(BaseModel):
     successful_requests: int
     failed_requests: int
     execution_time_seconds: float
-    timestamp: datetime = Field(default_factory=datetime.utcnow)
+    timestamp: datetime = Field(default_factory=lambda: datetime.now(UTC))
 
 
 # Configuration schemas

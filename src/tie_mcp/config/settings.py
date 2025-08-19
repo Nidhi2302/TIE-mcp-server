@@ -6,7 +6,7 @@ from enum import Enum
 from pathlib import Path
 from typing import Any
 
-from pydantic import Field, validator
+from pydantic import Field, field_validator, model_validator
 from pydantic_settings import BaseSettings
 
 
@@ -176,12 +176,11 @@ class ModelSettings(BaseSettings):
     max_model_versions: int = Field(default=10)
     auto_cleanup_models: bool = Field(default=True)
 
-    @validator("validation_ratio", "test_ratio")
-    def validate_ratios(cls, v, values):
-        if "validation_ratio" in values:
-            if v + values["validation_ratio"] > 1.0:
-                raise ValueError("validation_ratio + test_ratio must be <= 1.0")
-        return v
+    @model_validator(mode="after")
+    def validate_ratios(self):
+        if self.validation_ratio + self.test_ratio > 1.0:
+            raise ValueError("validation_ratio + test_ratio must be <= 1.0")
+        return self
 
     class Config:
         env_prefix = "MODEL_"
@@ -219,13 +218,13 @@ class Settings(BaseSettings):
     security: SecuritySettings = Field(default_factory=SecuritySettings)
     model: ModelSettings = Field(default_factory=ModelSettings)
 
-    @validator("environment", pre=True)
+    @field_validator("environment", mode="before")
     def validate_environment(cls, v):
         if isinstance(v, str):
             return Environment(v.lower())
         return v
 
-    @validator("log_level", pre=True)
+    @field_validator("log_level", mode="before")
     def validate_log_level(cls, v):
         if isinstance(v, str):
             return LogLevel(v.upper())

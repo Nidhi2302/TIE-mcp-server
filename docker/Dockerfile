@@ -55,10 +55,9 @@ WORKDIR /app
 # Copy virtual environment from base stage
 COPY --from=base /app/.venv /app/.venv
 
-# Copy application code
+# Copy application code (data/ and examples/ are excluded by .dockerignore to keep image slim)
+# If runtime data or examples are required, mount them as volumes or adjust .dockerignore accordingly.
 COPY src/ ./src/
-COPY data/ ./data/
-COPY examples/ ./examples/
 
 # Create necessary directories
 RUN mkdir -p logs data/models data/datasets data/configs
