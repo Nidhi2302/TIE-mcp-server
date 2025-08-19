@@ -14,8 +14,8 @@ from __future__ import annotations
 
 import asyncio
 import uuid
-from dataclasses import dataclass, asdict
-from typing import Any, Dict, List, Optional
+from dataclasses import asdict, dataclass
+from typing import Any
 
 from ..core.tie.engine import TechniqueInferenceEngine
 
@@ -26,15 +26,15 @@ class _ModelRecord:
     name: str
     model_type: str
     status: str
-    hyperparameters: Dict[str, Any]
-    metrics: Dict[str, float]
+    hyperparameters: dict[str, Any]
+    metrics: dict[str, float]
     dataset_path: str
     artifacts_path: str
     description: str
     version: str
     is_default: bool = False
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         return asdict(self)
 
 
@@ -55,11 +55,10 @@ class ModelManager:
     """
 
     def __init__(self) -> None:
-        self._models: Dict[str, _ModelRecord] = {}
-        self._engines: Dict[str, TechniqueInferenceEngine] = {}
+        self._models: dict[str, _ModelRecord] = {}
+        self._engines: dict[str, TechniqueInferenceEngine] = {}
         self._initialized = False
         self._lock = asyncio.Lock()
-        pass
 
     async def initialize(self) -> None:
         self._initialized = True
@@ -74,8 +73,8 @@ class ModelManager:
         self,
         engine: TechniqueInferenceEngine,
         model_type: str,
-        hyperparameters: Dict[str, Any],
-        metrics: Dict[str, float],
+        hyperparameters: dict[str, Any],
+        metrics: dict[str, float],
         dataset_path: str,
         description: str = "TIE model",
         artifacts_path: str | None = None,
@@ -102,7 +101,7 @@ class ModelManager:
             )
             self._models[model_id] = record
             self._engines[model_id] = engine
-            if set_default and not self.get_default_model_sync():
+            if set_default and self.get_default_model_sync() is None:
                 record.is_default = True
             return model_id
 
@@ -112,33 +111,32 @@ class ModelManager:
                 raise ValueError(f"Model {model_id} not found")
             return self._engines[model_id]
 
-    def get_default_model_sync(self) -> Optional[_ModelRecord]:
+    def get_default_model_sync(self) -> _ModelRecord | None:
         for rec in self._models.values():
             if rec.is_default:
                 return rec
         return None
 
-    async def get_default_model(self) -> Optional[_ModelRecord]:
+    async def get_default_model(self) -> _ModelRecord | None:
         return self.get_default_model_sync()
 
-    async def list_models(self, status: str | None = None) -> List[Dict[str, Any]]:
+    async def list_models(self, status: str | None = None) -> list[dict[str, Any]]:
         async with self._lock:
             models = list(self._models.values())
             if status:
                 models = [m for m in models if m.status == status]
             return [m.to_dict() for m in models]
 
-    async def get_model_info(self, model_id: str) -> Dict[str, Any]:
+    async def get_model_info(self, model_id: str) -> dict[str, Any]:
         async with self._lock:
             record = self._models.get(model_id)
-            if not record:
+            if record is None:
                 raise ValueError(f"Model {model_id} not found")
             return record.to_dict()
 
     async def delete_model(self, model_id: str) -> None:
         async with self._lock:
             if model_id in self._models:
-                # If default, clear default flag
                 was_default = self._models[model_id].is_default
                 del self._models[model_id]
                 self._engines.pop(model_id, None)
@@ -163,7 +161,7 @@ class ModelManager:
         raw_data_path: str,
         output_dataset_path: str,
         description: str | None = None,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """
         Stub dataset creation: just returns metadata.
         """
