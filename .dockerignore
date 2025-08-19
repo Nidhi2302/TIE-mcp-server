@@ -1,0 +1,50 @@
+# Version control
+.git
+.gitignore
+
+# Python caches
+__pycache__/
+*.py[cod]
+
+# Tests and local dev artifacts
+.tox/
+.nox/
+pytest.ini
+.coverage*
+htmlcov/
+tests/
+.notebooks/
+examples/
+
+# Virtual environments
+.venv/
+env/
+venv/
+
+# Build outputs
+build/
+dist/
+*.egg-info/
+
+# Poetry / cache
+poetry.lock
+.cache/
+.pdm.toml
+
+# Data and large artifacts
+data/
+mlruns/
+mlartifacts/
+
+# Logs
+logs/
+*.log
+
+# OS / editor
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+
+# Docker
+Dockerfile.old
