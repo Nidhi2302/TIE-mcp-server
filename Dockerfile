@@ -8,25 +8,30 @@ ENV POETRY_HOME=/opt/poetry \
     PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1
 
-# System dependencies
+# System dependencies (minimal set for building scientific deps)
 RUN apt-get update && apt-get install -y --no-install-recommends \
     curl build-essential \
   && rm -rf /var/lib/apt/lists/*
 
-# Install Poetry
+# Install Poetry (specified version)
 RUN curl -sSL https://install.python-poetry.org | python3 -
 ENV PATH="$POETRY_HOME/bin:$PATH"
 
 WORKDIR /app
 
-# Copy only dependency metadata + README (required by poetry build) for better layer caching
+# Copy dependency metadata + README first (layer caching + build requirements)
 COPY pyproject.toml poetry.lock README.md ./
 
-# Install only main (runtime) dependencies (no dev) without installing the package itself yet
+# (Optional) Normalize lock to current Poetry version to avoid compatibility warning
+# (Will be a no-op if already compatible)
+RUN poetry lock --no-update
+
+# Install only main runtime dependencies (faster; no dev)
 RUN poetry install --only main --no-root
 
-# Now copy full source tree (ensures package discovery works; previous layout copied only subdir)
-COPY src ./src
+# Copy only the package directory explicitly (resolves previous 'does not contain any element' issue)
+# Using absolute target path per request
+COPY src/tie_mcp /app/src/tie_mcp
 
 # Build wheel (produces dist/*.whl)
 RUN poetry build -f wheel
@@ -37,15 +42,15 @@ ENV PYTHONDONTWRITEBYTECODE=1 PYTHONUNBUFFERED=1
 
 WORKDIR /app
 
-# Create non-root user
-RUN useradd -r -u 1001 tie && chown tie:tie /app
+# Create non-root user (suppress uid range warning by choosing uid < 1000)
+RUN useradd -r -u 900 tie && chown tie:tie /app
 
-# Copy built wheel from build stage and install
+# Copy built wheel from build stage and install (only runtime artifacts)
 COPY --from=build /app/dist/*.whl /tmp/
-RUN pip install --no-cache-dir /tmp/tie_mcp_server-*.whl && rm /tmp/*.whl
+RUN pip install --no-cache-dir --no-warn-script-location /tmp/tie_mcp_server-*.whl && rm /tmp/*.whl
 
-# (Optional) Copy source tree for better stack traces / introspection (remove to slim image)
-COPY --from=build /app/src ./src
+# (Optional) Copy source package only for better stack traces (omit tests/examples)
+COPY --from=build /app/src/tie_mcp /app/src/tie_mcp
 
 USER tie
 EXPOSE 8000
