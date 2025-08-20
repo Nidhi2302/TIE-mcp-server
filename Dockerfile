@@ -17,16 +17,19 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 RUN curl -sSL https://install.python-poetry.org | python3 -
 ENV PATH="$POETRY_HOME/bin:$PATH"
 
+COPY pyproject.toml poetry.lock /app/
+COPY src/tie_mcp /app/src/tie_mcp
+
 WORKDIR /app
 
 # Copy dependency metadata first (caching)
-COPY pyproject.toml poetry.lock* ./
+#COPY pyproject.toml poetry.lock* ./
 
 # Install only main (runtime) dependencies (no dev) without installing the package itself yet
 RUN poetry install --only main --no-root
 
 # Copy application source
-COPY src ./src
+#COPY src ./src
 
 # Build wheel (produces dist/*.whl)
 RUN poetry build -f wheel
