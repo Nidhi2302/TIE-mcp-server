@@ -2,7 +2,7 @@
 API schemas for TIE MCP Server
 """
 
-from datetime import UTC, datetime
+from datetime import datetime, timezone
 from enum import Enum
 from typing import Any
 
@@ -111,7 +111,7 @@ class PredictionResponse(BaseModel):
     model_id: str
     prediction_method: str
     execution_time_seconds: float
-    timestamp: datetime = Field(default_factory=lambda: datetime.now(UTC))
+    timestamp: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
 
 
 class ModelMetrics(BaseModel):
@@ -146,7 +146,7 @@ class TrainingResponse(BaseModel):
     metrics: dict[str, float]
     training_time_seconds: float
     dataset_info: DatasetInfo
-    timestamp: datetime = Field(default_factory=lambda: datetime.now(UTC))
+    timestamp: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
 
 
 class ModelInfo(BaseModel):
@@ -173,7 +173,7 @@ class ModelEvaluationResponse(BaseModel):
     model_id: str
     metrics: dict[str, float]
     k_values: list[int]
-    timestamp: datetime = Field(default_factory=lambda: datetime.now(UTC))
+    timestamp: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
 
 
 class AttackTechniqueInfo(BaseModel):
@@ -196,7 +196,7 @@ class DatasetCreationResponse(BaseModel):
     num_reports: int
     num_techniques: int
     file_path: str
-    created_at: datetime = Field(default_factory=lambda: datetime.now(UTC))
+    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
 
 
 class ModelListResponse(BaseModel):
@@ -226,7 +226,7 @@ class SystemMetrics(BaseModel):
     average_prediction_time: float
     average_training_time: float
     error_rate_percent: float
-    timestamp: datetime = Field(default_factory=lambda: datetime.now(UTC))
+    timestamp: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
 
 
 class HealthCheckResponse(BaseModel):
@@ -234,7 +234,7 @@ class HealthCheckResponse(BaseModel):
 
     status: str
     version: str
-    timestamp: datetime = Field(default_factory=lambda: datetime.now(UTC))
+    timestamp: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
     components: dict[str, str] = Field(default_factory=dict)
     metrics: SystemMetrics | None = None
 
@@ -245,7 +245,7 @@ class ErrorResponse(BaseModel):
     error: str
     detail: str | None = None
     error_code: str | None = None
-    timestamp: datetime = Field(default_factory=lambda: datetime.now(UTC))
+    timestamp: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
 
 
 # Task-related schemas for async operations
@@ -303,7 +303,7 @@ class BatchPredictionResponse(BaseModel):
     successful_requests: int
     failed_requests: int
     execution_time_seconds: float
-    timestamp: datetime = Field(default_factory=lambda: datetime.now(UTC))
+    timestamp: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
 
 
 # Configuration schemas

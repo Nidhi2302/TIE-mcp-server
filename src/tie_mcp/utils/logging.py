@@ -5,7 +5,7 @@ Logging utilities for TIE MCP Server
 import logging
 import logging.handlers
 import sys
-from datetime import UTC, datetime
+from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
@@ -130,7 +130,7 @@ class RequestLogger:
     def __init__(self, correlation_id: str):
         self.correlation_id = correlation_id
         self.logger = ContextualLogger("request", {"correlation_id": correlation_id})
-        self.start_time = datetime.now(UTC)
+        self.start_time = datetime.now(timezone.utc)
 
     def log_request(self, method: str, path: str, **kwargs):
         """Log incoming request"""
@@ -138,7 +138,7 @@ class RequestLogger:
 
     def log_response(self, status_code: int, **kwargs):
         """Log outgoing response"""
-        duration = (datetime.now(UTC) - self.start_time).total_seconds()
+        duration = (datetime.now(timezone.utc) - self.start_time).total_seconds()
         self.logger.info(
             "Request completed",
             status_code=status_code,
@@ -148,7 +148,7 @@ class RequestLogger:
 
     def log_error(self, error: Exception, **kwargs):
         """Log request error"""
-        duration = (datetime.now(UTC) - self.start_time).total_seconds()
+        duration = (datetime.now(timezone.utc) - self.start_time).total_seconds()
         self.logger.error(
             "Request failed",
             error=str(error),
