@@ -8,7 +8,7 @@ ENV POETRY_HOME=/opt/poetry \
     PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1
 
-# System deps (build tools + curl for Poetry installer)
+# System dependencies
 RUN apt-get update && apt-get install -y --no-install-recommends \
     curl build-essential \
   && rm -rf /var/lib/apt/lists/*
@@ -17,24 +17,21 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 RUN curl -sSL https://install.python-poetry.org | python3 -
 ENV PATH="$POETRY_HOME/bin:$PATH"
 
-COPY pyproject.toml poetry.lock /app/
-COPY src/tie_mcp /app/src/tie_mcp
-
 WORKDIR /app
 
-# Copy dependency metadata first (caching)
-#COPY pyproject.toml poetry.lock* ./
+# Copy only dependency metadata + README (required by poetry build) for better layer caching
+COPY pyproject.toml poetry.lock README.md ./
 
 # Install only main (runtime) dependencies (no dev) without installing the package itself yet
 RUN poetry install --only main --no-root
 
-# Copy application source
-#COPY src ./src
+# Now copy full source tree (ensures package discovery works; previous layout copied only subdir)
+COPY src ./src
 
 # Build wheel (produces dist/*.whl)
 RUN poetry build -f wheel
 
-# Runtime image
+# -------- Runtime image --------
 FROM python:3.13-slim AS runtime
 ENV PYTHONDONTWRITEBYTECODE=1 PYTHONUNBUFFERED=1
 

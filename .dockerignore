@@ -27,7 +27,6 @@ dist/
 *.egg-info/
 
 # Poetry / cache
-poetry.lock
 .cache/
 .pdm.toml
 
