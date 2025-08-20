@@ -30,6 +30,8 @@ ENV PATH="$POETRY_HOME/bin:$PATH"
 # (Will be a no-op if already compatible)
 RUN poetry lock --no-update
 
+RUN [ "$(ls -A /app/src/tie_mcp)" ] || (echo 'src/tie_mcp is empty!' && exit 1)
+
 # Install only main runtime dependencies (faster; no dev)
 RUN poetry install --only main --no-root
 
