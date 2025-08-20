@@ -8,6 +8,15 @@ ENV POETRY_HOME=/opt/poetry \
     PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1
 
+# Copy only the package directory explicitly (resolves previous 'does not contain any element' issue)
+# Using absolute target path per request
+COPY src/tie_mcp /app/src/tie_mcp
+
+# Copy dependency metadata + README first (layer caching + build requirements)
+COPY pyproject.toml poetry.lock README.md ./
+
+WORKDIR /app
+
 # System dependencies (minimal set for building scientific deps)
 RUN apt-get update && apt-get install -y --no-install-recommends \
     curl build-essential \
@@ -17,21 +26,12 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 RUN curl -sSL https://install.python-poetry.org | python3 -
 ENV PATH="$POETRY_HOME/bin:$PATH"
 
-WORKDIR /app
-
-# Copy dependency metadata + README first (layer caching + build requirements)
-COPY pyproject.toml poetry.lock README.md ./
-
 # (Optional) Normalize lock to current Poetry version to avoid compatibility warning
 # (Will be a no-op if already compatible)
 RUN poetry lock --no-update
 
 # Install only main runtime dependencies (faster; no dev)
 RUN poetry install --only main --no-root
-
-# Copy only the package directory explicitly (resolves previous 'does not contain any element' issue)
-# Using absolute target path per request
-COPY src/tie_mcp /app/src/tie_mcp
 
 # Build wheel (produces dist/*.whl)
 RUN poetry build -f wheel
@@ -50,7 +50,7 @@ COPY --from=build /app/dist/*.whl /tmp/
 RUN pip install --no-cache-dir --no-warn-script-location /tmp/tie_mcp_server-*.whl && rm /tmp/*.whl
 
 # (Optional) Copy source package only for better stack traces (omit tests/examples)
-COPY --from=build /app/src/tie_mcp /app/src/tie_mcp
+COPY --from=build src/tie_mcp /app/src/tie_mcp
 
 USER tie
 EXPOSE 8000
