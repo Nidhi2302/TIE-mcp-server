@@ -1,32 +1,5 @@
 # TIE MCP Server
 
-## GitHub Actions Setup (Optional)
-
-For enhanced GitHub Pages deployment, you can optionally set up a Personal Access Token (PAT):
-
-### Creating a GitHub PAT
-1. Go to GitHub Settings → Developer settings → Personal access tokens → Tokens (classic)
-2. Generate a new token with these scopes:
-   - `repo` (Full control of private repositories)
-   - `workflow` (Update GitHub Action workflows)
-3. Copy the generated token
-
-### Adding PAT to Repository
-1. Go to your repository Settings → Secrets and variables → Actions
-2. Click "New repository secret"
-3. Name: `GH_TOKEN`
-4. Value: Paste your PAT
-5. Click "Add secret"
-
-The workflow will automatically use `GH_TOKEN` if available, otherwise fall back to the default `GITHUB_TOKEN`.
-
----
-
-[![Python](https://img.shields.io/badge/python-3.10%2B-blue)](https://www.python.org/downloads/)
-[![Code style: black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/psf/black)
-
-A comprehensive **Model Context Protocol (MCP)** server implementation for the **Technique Inference Engine (TIE)** project, enabling intelligent MITRE ATT&CK technique prediction through advanced machine learning models.
-
 ## 🎯 Overview
 
 The TIE MCP Server provides cybersecurity professionals and researchers with AI-powered predictions of likely MITRE ATT&CK techniques based on observed attack behaviors. Built on the Model Context Protocol, it seamlessly integrates with AI assistants and security tools to enhance threat analysis and incident response capabilities.
@@ -363,48 +336,6 @@ What techniques are related to "command execution" in the MITRE ATT&CK framework
 List all available trained models with their performance metrics
 ```
 
-## 🏗️ MCP Integration Details
-
-### How Tools Are Executed
-
-When you interact with the TIE MCP Server through an AI assistant, here's what happens behind the scenes:
-
-1. **Request Parsing**: Your natural language query is interpreted by the AI assistant
-2. **Tool Selection**: The assistant identifies which MCP tool to use
-3. **Parameter Extraction**: Required parameters are extracted from your query
-4. **MCP Protocol**: A JSON-RPC request is sent to the TIE server
-5. **Tool Execution**: The server executes the requested tool with provided parameters
-6. **Response Processing**: Results are returned via JSON-RPC
-7. **Natural Language**: The AI assistant formats the response in a user-friendly way
-
-### Example Tool Execution Flow
-
-```mermaid
-graph TD
-    A[User: "What techniques follow T1059?"]
-    B[Claude: Interprets query]
-    C[MCP: predict_techniques tool]
-    D[TIE: Load model WALS]
-    E[TIE: Compute predictions]
-    F[MCP: Return JSON response]
-    G[Claude: Format as text]
-    H[User: Sees predictions]
-    
-    A --> B
-    B --> C
-    C --> D
-    D --> E
-    E --> F
-    F --> G
-    G --> H
-    
-    style A fill:#e1f5fe
-    style H fill:#e1f5fe
-    style C fill:#fff3e0
-    style D fill:#f3e5f5
-    style E fill:#f3e5f5
-```
-
 ## 🛠️ API Documentation
 
 ### Available MCP Tools
@@ -512,29 +443,6 @@ ruff check src/ tests/ --fix
 
 # Type checking
 mypy src/
-```
-
-### MCP Server Lifecycle
-
-```mermaid
-stateDiagram-v2
-    [*] --> Initialize: Start Server
-    Initialize --> LoadModels: Load ML Models
-    LoadModels --> LoadData: Load ATT&CK Data
-    LoadData --> Ready: Server Ready
-    
-    Ready --> ProcessRequest: Receive Request
-    ProcessRequest --> ValidateInput: Validate Parameters
-    
-    ValidateInput --> ExecuteTool: Valid Input
-    ValidateInput --> ReturnError: Invalid Input
-    
-    ExecuteTool --> GenerateResponse: Process Tool
-    GenerateResponse --> Ready: Send Response
-    ReturnError --> Ready: Send Error
-    
-    Ready --> Shutdown: Stop Signal
-    Shutdown --> [*]: Server Stopped
 ```
 
 ### Project Structure
